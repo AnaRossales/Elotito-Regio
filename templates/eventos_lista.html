@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block title %}Historial de Eventos{% endblock %}
+
+{% block content %}
+    <h1>🗓️ Historial de Eventos Registrados</h1>
+    <p>Aquí puedes ver todas las ventas y eventos guardados en el sistema.</p>
+
+    <table border="1" style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="background-color: #f2f2f2;">
+                <th style="padding: 8px;">ID Evento</th>
+                <th style="padding: 8px;">Cliente</th>
+                <th style="padding: 8px;">Fecha</th>
+                <th style="padding: 8px;">Lugar</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for evento in lista_eventos %}
+            <tr>
+                <td style="padding: 8px;">{{ evento.id }}</td>
+                <td style="padding: 8px;">{{ evento.cliente }}</td>
+                <td style="padding: 8px;">{{ evento.fecha }}</td>
+                <td style="padding: 8px;">{{ evento.lugar }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

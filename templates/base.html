@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Elotito Regio{% endblock %}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 0; background-color: #FFF8E1; }
+        .nav {
+            background-color: #FFA000; /* Naranja/Elote */
+            padding: 10px 20px;
+            display: flex;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .nav a {
+            color: black;
+            font-weight: bold;
+            text-decoration: none;
+            padding: 14px 20px;
+            font-size: 16px;
+        }
+        .nav a:hover { background-color: #FFC107; }
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <nav class="nav">
+        <a href="/">🌽 Registrar Evento</a>
+        <a href="/eventos_lista">🗓️ Ver Eventos</a>
+        <a href="/clientes">👤 Clientes</a>
+        <a href="/paquetes">🍿 Paquetes</a>
+    </nav>
+
+    <div class="container">
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>
