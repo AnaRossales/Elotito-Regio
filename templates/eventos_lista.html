@@ -1,29 +1,68 @@
 {% extends "base.html" %}
 
-{% block title %}Historial de Eventos{% endblock %}
+{% block title %}Historial de Eventos - Elotito Regio{% endblock %}
 
 {% block content %}
-    <h1>🗓️ Historial de Eventos Registrados</h1>
-    <p>Aquí puedes ver todas las ventas y eventos guardados en el sistema.</p>
+<h1 class="main-title">Historial de Eventos</h1>
 
-    <table border="1" style="width: 100%; border-collapse: collapse;">
-        <thead>
-            <tr style="background-color: #f2f2f2;">
-                <th style="padding: 8px;">ID Evento</th>
-                <th style="padding: 8px;">Cliente</th>
-                <th style="padding: 8px;">Fecha</th>
-                <th style="padding: 8px;">Lugar</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for evento in lista_eventos %}
-            <tr>
-                <td style="padding: 8px;">{{ evento.id }}</td>
-                <td style="padding: 8px;">{{ evento.cliente }}</td>
-                <td style="padding: 8px;">{{ evento.fecha }}</td>
-                <td style="padding: 8px;">{{ evento.lugar }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="card-custom shadow-sm p-4" style="max-width: 1000px;">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle border-0">
+            <thead class="table-light">
+                <tr>
+                    <th class="rounded-start border-0">ID</th>
+                    <th class="border-0">Fecha / Lugar</th>
+                    <th class="border-0">Cliente</th>
+                    <th class="border-0">Total</th>
+                    <th class="border-0">Adelanto</th>
+                    <th class="border-0">Adeudo</th>
+                    <th class="rounded-end border-0 text-center">Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for evento in lista_eventos %}
+                    {% set adeudo = evento.total - evento.adelanto %}
+                    
+                    <tr>
+                        <td class="fw-bold text-muted border-0 border-bottom">#{{ evento.id }}</td>
+                        
+                        <td class="border-0 border-bottom">
+                            <span class="fw-600">{{ evento.fecha }}</span><br>
+                            <small class="text-muted">{{ evento.lugar }}</small>
+                        </td>
+                        
+                        <td class="fw-bold border-0 border-bottom">{{ evento.cliente }}</td>
+                        
+                        <td class="border-0 border-bottom text-dark fw-bold">
+                            ${{ "%.2f"|format(evento.total) }}
+                        </td>
+                        
+                        <td class="border-0 border-bottom text-success">
+                            ${{ "%.2f"|format(evento.adelanto) }}<br>
+                            <small class="text-muted" style="font-size: 0.75rem;">{{ evento.metodo_pago }}</small>
+                        </td>
+                        
+                        <td class="border-0 border-bottom fw-bold text-danger">
+                            ${{ "%.2f"|format(adeudo) }}
+                        </td>
+                        
+                        <td class="border-0 border-bottom text-center">
+                            {% if adeudo <= 0 %}
+                                <span class="badge bg-success rounded-pill px-3 py-2 shadow-sm">Pagado</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark rounded-pill px-3 py-2 shadow-sm">Pendiente</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="text-center text-muted py-5 border-0">
+                            No hay eventos ni ventas registradas aún.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 {% endblock %}

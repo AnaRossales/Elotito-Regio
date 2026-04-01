@@ -1,6 +1,4 @@
 # database/db_manager.py
-# Contiene todas las funciones que interactúan con la base de datos.
-
 import mysql.connector
 from mysql.connector import Error
 from models.cliente import Cliente
@@ -14,7 +12,7 @@ def crear_conexion():
             host='localhost',
             database='elotito_regio_db',
             user='root',
-            password=''  # <-- Asegúrate de que esta sea tu contraseña (vacía para XAMPP por defecto)
+            password='' 
         )
         if conexion.is_connected():
             return conexion
@@ -22,19 +20,19 @@ def crear_conexion():
         print(f"Error al conectar a MySQL: {e}")
         return None
 
+# -----------------------------------------------------------------
 # --- Funciones de Clientes ---
-
+# -----------------------------------------------------------------
 def agregar_cliente_db(conexion, cliente):
-    """Registra un nuevo cliente en la BD. Recibe un objeto Cliente."""
     cursor = None
     try:
         cursor = conexion.cursor()
         sql = """
-        INSERT INTO Clientes (nombre, telefono, email, direccion, fecha_registro)
+        INSERT INTO Clientes (nombre, apellido_paterno, apellido_materno, telefono, email) 
         VALUES (%s, %s, %s, %s, %s)
         """
-        valores = (cliente.nombre, cliente.telefono, cliente.email, 
-                   cliente.direccion, cliente.fecha_registro)
+        valores = (cliente.nombre, cliente.apellido_paterno, cliente.apellido_materno, 
+                   cliente.telefono, cliente.email)
         cursor.execute(sql, valores)
         conexion.commit()
         return cursor.lastrowid
@@ -45,17 +43,14 @@ def agregar_cliente_db(conexion, cliente):
         if cursor: cursor.close()
 
 def get_clientes_db(conexion):
-    """Obtiene todos los clientes de la BD. Devuelve una lista de objetos Cliente."""
     clientes = []
     cursor = None
     try:
         cursor = conexion.cursor()
-        cursor.execute("SELECT id_cliente, nombre, telefono, email, direccion, fecha_registro FROM Clientes")
+        cursor.execute("SELECT id_cliente, nombre, apellido_paterno, apellido_materno, telefono, email FROM Clientes")
         for fila in cursor.fetchall():
-            cliente = Cliente(
-                id_cliente=fila[0], nombre=fila[1], telefono=fila[2],
-                email=fila[3], direccion=fila[4], fecha_registro=fila[5]
-            )
+            cliente = Cliente(id_cliente=fila[0], nombre=fila[1], apellido_paterno=fila[2], 
+                              apellido_materno=fila[3], telefono=fila[4], email=fila[5])
             clientes.append(cliente)
     except Error as e:
         print(f"Error al consultar clientes: {e}")
@@ -63,10 +58,10 @@ def get_clientes_db(conexion):
         if cursor: cursor.close()
     return clientes
 
-# --- Funciones de Paquetes ---
-
+# -----------------------------------------------------------------
+# --- Funciones de Paquetes (¡Las que faltaban!) ---
+# -----------------------------------------------------------------
 def agregar_paquete_db(conexion, paquete):
-    """Registra un nuevo paquete en la BD. Recibe un objeto Paquete."""
     cursor = None
     try:
         cursor = conexion.cursor()
@@ -82,7 +77,6 @@ def agregar_paquete_db(conexion, paquete):
         if cursor: cursor.close()
 
 def get_paquetes_db(conexion):
-    """Obtiene todos los paquetes. Devuelve una lista de objetos Paquete."""
     paquetes = []
     cursor = None
     try:
@@ -100,73 +94,75 @@ def get_paquetes_db(conexion):
         if cursor: cursor.close()
     return paquetes
 
-# --- Funciones de Eventos ---
-
-def agregar_evento_db(conexion, evento):
-    """
-    Registra un nuevo evento y sus paquetes asociados en una transacción.
-    Recibe un objeto Evento.
-    """
+# -----------------------------------------------------------------
+# --- Funciones de Eventos y Catálogos ---
+# -----------------------------------------------------------------
+def get_metodos_pago_db(conexion):
+    metodos = []
     cursor = None
     try:
         cursor = conexion.cursor()
-        
-        # --- AQUÍ ESTABA EL ERROR ---
-        # La línea 'conexion.start_transaction()' fue eliminada.
-        
-        # 1. Insertar en la tabla Eventos
+        cursor.execute("SELECT id_metodo, nombre_metodo FROM Metodos_Pago")
+        for fila in cursor.fetchall():
+            metodos.append({"id": fila[0], "nombre": fila[1]})
+    except Error as e:
+        print(f"Error al consultar metodos de pago: {e}")
+    finally:
+        if cursor: cursor.close()
+    return metodos
+
+def agregar_evento_db(conexion, evento):
+    cursor = None
+    try:
+        cursor = conexion.cursor()
         sql_evento = """
-        INSERT INTO Eventos (id_cliente, fecha_evento, hora_evento, lugar, adelanto, total, metodo_pago)
-        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        INSERT INTO Eventos (id_cliente, fecha_evento, hora_evento, lugar, adelanto, id_metodo_pago)
+        VALUES (%s, %s, %s, %s, %s, %s)
         """
         valores_evento = (evento.id_cliente, evento.fecha_evento, evento.hora_evento, 
-                          evento.lugar, evento.adelanto, evento.total, evento.metodo_pago)
+                          evento.lugar, evento.adelanto, evento.id_metodo_pago)
         
         cursor.execute(sql_evento, valores_evento)
         id_evento_nuevo = cursor.lastrowid
         
-        # 2. Insertar en la tabla Evento_Paquete
         sql_paquete = "INSERT INTO Evento_Paquete (id_evento, id_paquete, cantidad) VALUES (%s, %s, %s)"
-        
         for (id_paquete, cantidad) in evento.paquetes:
-            valores_paquete = (id_evento_nuevo, id_paquete, cantidad)
-            cursor.execute(sql_paquete, valores_paquete)
+            cursor.execute(sql_paquete, (id_evento_nuevo, id_paquete, cantidad))
 
-        # Si todo salió bien, confirmar la transacción
         conexion.commit()
         return id_evento_nuevo
-
     except Error as e:
-        # Aquí se imprime tu error
         print(f"Error al registrar evento: {e}")
-        # Si algo falla, revertir todos los cambios
         if conexion: conexion.rollback()
         return None
     finally:
         if cursor: cursor.close()
 
 def get_eventos_db(conexion):
-    """
-    Obtiene un listado simple de eventos con el nombre del cliente.
-    """
     eventos = []
     cursor = None
     try:
         cursor = conexion.cursor()
-        # Unimos Eventos con Clientes para obtener el nombre
         sql = """
-        SELECT e.id_evento, e.fecha_evento, e.lugar, c.nombre 
+        SELECT 
+            e.id_evento, e.fecha_evento, e.lugar, 
+            CONCAT(c.nombre, ' ', c.apellido_paterno) as cliente,
+            IFNULL(m.nombre_metodo, 'N/A') as metodo_pago,
+            e.adelanto,
+            IFNULL(SUM(ep.cantidad * p.precio), 0) as total_evento
         FROM Eventos e
         JOIN Clientes c ON e.id_cliente = c.id_cliente
+        LEFT JOIN Metodos_Pago m ON e.id_metodo_pago = m.id_metodo
+        LEFT JOIN Evento_Paquete ep ON e.id_evento = ep.id_evento
+        LEFT JOIN Paquetes p ON ep.id_paquete = p.id_paquete
+        GROUP BY e.id_evento
         ORDER BY e.fecha_evento DESC
         """
         cursor.execute(sql)
-        for (id_evento, fecha, lugar, cliente_nombre) in cursor.fetchall():
+        for fila in cursor.fetchall():
             eventos.append({
-                "id": id_evento,
-                "fecha": fecha,
-                "lugar": lugar,
-                "cliente": cliente_nombre
+                "id": fila[0], "fecha": fila[1], "lugar": fila[2], "cliente": fila[3],
+                "metodo_pago": fila[4], "adelanto": fila[5], "total": fila[6]
             })
     except Error as e:
         print(f"Error al consultar eventos: {e}")

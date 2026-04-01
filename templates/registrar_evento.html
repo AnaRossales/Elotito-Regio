@@ -1,63 +1,96 @@
 {% extends "base.html" %}
 
-{% block title %}Registrar Nuevo Evento{% endblock %}
+{% block title %}Registrar Nuevo Evento - Elotito Regio{% endblock %}
 
 {% block content %}
-    <h1>🌽 Registrar Nuevo Evento (Venta)</h1>
-    <p>Este es el formulario principal para registrar una venta o un evento nuevo.</p>
+    <h1 class="main-title">Registrar Nuevo Evento</h1>
 
-    <form action="/guardar_evento" method="POST">
-        
-        <h2>1. Cliente</h2>
-        <label for="cliente">Seleccionar un cliente existente:</label>
-        <select id="cliente" name="id_cliente" required>
-            <option value="">-- Elija un cliente --</option>
-            {% for cliente in lista_clientes %}
-                <option value="{{ cliente.id_cliente }}">
-                    {{ cliente.nombre }} (Tel: {{ cliente.telefono }})
-                </option>
-            {% endfor %}
-        </select>
-        <p>¿Cliente nuevo? <a href="/clientes">Regístralo aquí primero</a>.</p>
-
-        <h2>2. Detalles del Evento (Req: fechas, lugar, etc.)</h2>
-        <label for="fecha_evento">Fecha del Evento:</label>
-        <input type="date" id="fecha_evento" name="fecha_evento" required>
-
-        <label for="hora_evento" style="margin-left: 10px;">Hora:</label>
-        <input type="time" id="hora_evento" name="hora_evento" required>
-        <br><br>
-        <label for="lugar">Lugar del Evento:</label>
-        <input type="text" id="lugar" name="lugar" style="width: 95%;" required>
-
-        <h2>3. Paquetes Incluidos</h2>
-        <p>Selecciona los paquetes y sus cantidades:</p>
-        
-        <div style="border: 1px solid #eee; padding: 10px; border-radius: 5px;">
-        {% for paquete in lista_paquetes %}
-            <div>
-                <input type="checkbox" name="paquetes_seleccionados" value="{{ paquete.id_paquete }}">
-                <strong>{{ paquete.nombre_paquete }}</strong> (${{ "%.2f"|format(paquete.precio) }})
-                
-                <label for="cantidad_{{ paquete.id_paquete }}" style="margin-left: 10px;">Cantidad:</label>
-                <input type="number" name="cantidad_{{ paquete.id_paquete }}" min="0" value="0" style="width: 60px;">
+    <div class="card-custom shadow-sm">
+        <form action="/guardar_evento" method="POST">
+            
+            <div class="mb-5">
+                <label class="form-label-custom">1. Selección de Cliente</label>
+                <div class="form-group-flex">
+                    <select name="id_cliente" class="form-select" required>
+                        <option value="" selected>Elegir cliente...</option>
+                        {% for cliente in lista_clientes %}
+                            <option value="{{ cliente.id_cliente }}">{{ cliente.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                    <a href="/clientes" class="btn btn-custom-orange shadow-sm">+ Nuevo Cliente</a>
+                </div>
             </div>
-        {% endfor %}
-        </div>
-        
-        <h2>4. Detalles del Pago</h2>
-        <label for="total">Total ($):</label>
-        <input type="number" step="0.01" id="total" name="total" required>
 
-        <label for="adelanto" style="margin-left: 10px;">Adelanto ($):</label>
-        <input type="number" step="0.01" id="adelanto" name="adelanto" value="0">
-        <br><br>
-        <label for="metodo_pago">Método de Pago (Adelanto):</label>
-        <input type="text" id="metodo_pago" name="metodo_pago" placeholder="Ej. Transferencia, Efectivo">
+            <div class="mb-5">
+                <label class="form-label-custom">2. Detalles del Evento</label>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-6">
+                        <label class="small ms-3 fw-bold text-muted mb-1">Fecha</label>
+                        <input type="date" name="fecha_evento" class="form-control" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="small ms-3 fw-bold text-muted mb-1">Hora</label>
+                        <input type="time" name="hora_evento" class="form-control" required>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <label class="small ms-3 fw-bold text-muted mb-1">Ubicación</label>
+                    <input type="text" name="lugar" class="form-control" placeholder="Dirección del lugar..." required>
+                </div>
+            </div>
 
-        <hr style="margin-top: 20px;">
-        <button type="submit" style="width: 100%; padding: 15px; background-color: #4CAF50; color: white; font-size: 18px; border: none; cursor: pointer;">
-            ✅ Guardar Evento (Venta)
-        </button>
-    </form>
+            <div class="mb-5 p-4 rounded-4 bg-light border-0 shadow-sm">
+                <label class="form-label-custom mb-3">3. Paquetes y Cantidad</label>
+                
+                {% if lista_paquetes %}
+                    <div class="row g-3">
+                    {% for paquete in lista_paquetes %}
+                        <div class="col-md-6 col-lg-4">
+                            <div class="border rounded-pill p-3 bg-white d-flex flex-column justify-content-between h-100 shadow-sm">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <div class="form-check m-0">
+                                        <input class="form-check-input me-2" type="checkbox" name="paquetes_seleccionados" value="{{ paquete.id_paquete }}" id="p_{{ paquete.id_paquete }}">
+                                        <label class="form-check-label fw-600 text-dark fs-6" for="p_{{ paquete.id_paquete }}">
+                                            {{ paquete.nombre_paquete }}
+                                        </label>
+                                    </div>
+                                    <span class="badge bg-warning text-dark fs-7">$ {{ "%.2f"|format(paquete.precio) }}</span>
+                                </div>
+                                
+                                <div class="input-group input-group-sm mt-2">
+                                    <span class="input-group-text bg-white border-0 fs-7 text-muted">Cant:</span>
+                                    <input type="number" name="cantidad_{{ paquete.id_paquete }}" min="0" value="0" class="form-control text-center border-0 bg-light rounded-pill" style="max-width: 60px;">
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="alert alert-warning text-center rounded-pill m-0" role="alert">
+                        No hay paquetes registrados aún. <a href="/paquetes" class="alert-link">Registra un paquete aquí</a>.
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="mb-5">
+                <label class="form-label-custom">4. Información de Pago</label>
+                <div class="row g-3 mb-3">
+                    <div class="col-md-12">
+                        <label class="small ms-3 fw-bold text-muted mb-1">Adelanto recibido ($) - Opcional</label>
+                        <input type="number" step="0.01" name="adelanto" class="form-control" value="0" placeholder="Ej. 500.00">
+                    </div>
+                </div>
+                <div class="col-12">
+                    <label class="small ms-3 fw-bold text-muted mb-1">Método de Pago</label>
+                    <input type="text" name="metodo_pago" class="form-control" placeholder="Efectivo, Transferencia, etc.">
+                </div>
+            </div>
+
+            <div class="btn-center-container">
+                <button type="submit" class="btn btn-custom-success btn-lg shadow">
+                    Finalizar y Guardar Venta
+                </button>
+            </div>
+        </form>
+    </div>
 {% endblock %}
