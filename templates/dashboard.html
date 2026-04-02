@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - Elotito Regio{% endblock %}
+{% block content %}
+<h1 class="main-title">Resumen del Negocio</h1>
+<div class="container" style="max-width: 1000px;">
+    <div class="row g-4 mb-5">
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100" style="background: linear-gradient(135deg, #FFC107 0%, #FFA000 100%); color: white;">
+                <div class="card-body p-4 text-center d-flex flex-column justify-content-center">
+                    <h6 class="text-uppercase fw-bold mb-2">Ingresos Estimados</h6>
+                    <h2 class="display-5 fw-bold mb-0">${{ "%.2f"|format(stats.ingresos_totales) }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-light">
+                <div class="card-body p-4 text-center d-flex flex-column justify-content-center">
+                    <h6 class="text-uppercase fw-bold text-muted mb-2">Ventas Registradas</h6>
+                    <h2 class="display-5 fw-bold text-dark mb-0">{{ stats.total_eventos }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-light">
+                <div class="card-body p-4 text-center d-flex flex-column justify-content-center">
+                    <h6 class="text-uppercase fw-bold text-muted mb-2">Clientes en BD</h6>
+                    <h2 class="display-5 fw-bold text-dark mb-0">{{ stats.total_clientes }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="card-custom shadow-sm p-4" style="max-width: 1000px;">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h5 class="fw-bold text-muted text-uppercase m-0">Últimos Eventos</h5>
+            <a href="/registrar_evento" class="btn btn-custom-orange shadow-sm px-4" style="height: auto;">+ Nueva Venta</a>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle border-0">
+                <thead class="table-light">
+                    <tr><th>Fecha</th><th>Cliente</th><th>Total</th><th>Estado</th></tr>
+                </thead>
+                <tbody>
+                    {% for e in ultimos_eventos %}
+                        {% set adeudo = e.total - e.adelanto %}
+                        <tr>
+                            <td class="border-0 border-bottom">{{ e.fecha }}</td>
+                            <td class="border-0 border-bottom">{{ e.cliente }}</td>
+                            <td class="border-0 border-bottom fw-bold text-dark">${{ "%.2f"|format(e.total) }}</td>
+                            <td class="border-0 border-bottom">
+                                {% if adeudo <= 0 %}<span class="badge bg-success rounded-pill px-3 py-2 shadow-sm">Pagado</span>
+                                {% else %}<span class="badge bg-warning text-dark rounded-pill px-3 py-2 shadow-sm">Pendiente</span>{% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr><td colspan="4" class="text-center text-muted py-4 border-0">Aún no hay actividad reciente.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

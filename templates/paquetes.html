@@ -1,32 +1,39 @@
 {% extends "base.html" %}
-
 {% block title %}Paquetes - Elotito Regio{% endblock %}
-
 {% block content %}
 <h1 class="main-title">Administrar Paquetes</h1>
 
 <div class="card-custom shadow-sm mb-5">
-    <h5 class="mb-4 fw-bold text-muted text-uppercase">Registrar Nuevo Paquete</h5>
+    <h5 class="mb-4 fw-bold text-muted text-uppercase">
+        {% if paquete_editar %}
+            <span class="text-primary">Editar Paquete #{{ paquete_editar.id_paquete }}</span>
+        {% else %}
+            Registrar Nuevo Paquete
+        {% endif %}
+    </h5>
     
-    <form action="/guardar_paquete" method="POST">
+    <form action="{% if paquete_editar %}/editar_paquete/{{ paquete_editar.id_paquete }}{% else %}/guardar_paquete{% endif %}" method="POST">
         <div class="row g-3 mb-4">
             <div class="col-md-8">
                 <label class="small ms-3 fw-bold text-muted mb-1">Nombre del Paquete *</label>
-                <input type="text" name="nombre_paquete" class="form-control" required placeholder="Ej. Paquete Básico 50 personas">
+                <input type="text" name="nombre_paquete" class="form-control" required placeholder="Ej. Paquete Básico 50" value="{{ paquete_editar.nombre_paquete if paquete_editar else '' }}">
             </div>
             <div class="col-md-4">
                 <label class="small ms-3 fw-bold text-muted mb-1">Precio ($) *</label>
-                <input type="number" step="0.01" name="precio" class="form-control" required placeholder="0.00">
+                <input type="number" step="0.01" name="precio" class="form-control" required placeholder="0.00" value="{{ paquete_editar.precio if paquete_editar else '' }}">
             </div>
             <div class="col-12">
                 <label class="small ms-3 fw-bold text-muted mb-1">Descripción de lo que incluye</label>
-                <textarea name="descripcion" class="form-control" style="border-radius: 20px; padding: 1rem;" rows="3" placeholder="Ej. Incluye 50 elotes enteros, mayonesa, queso, chile..."></textarea>
+                <textarea name="descripcion" class="form-control" style="border-radius: 20px; padding: 1rem;" rows="3" placeholder="Ej. Incluye 50 elotes enteros...">{{ paquete_editar.descripcion if paquete_editar else '' }}</textarea>
             </div>
         </div>
-
-        <div class="btn-center-container mt-2">
-            <button type="submit" class="btn btn-custom-success btn-lg shadow">
-                Guardar Paquete
+        
+        <div class="text-center mt-4">
+            {% if paquete_editar %}
+                <a href="/paquetes" class="btn btn-outline-secondary btn-lg shadow-sm rounded-pill px-4 me-2">Cancelar</a>
+            {% endif %}
+            <button type="submit" class="btn btn-custom-success btn-lg shadow rounded-pill px-5">
+                {% if paquete_editar %}Actualizar Paquete{% else %}Guardar Paquete{% endif %}
             </button>
         </div>
     </form>
@@ -34,15 +41,15 @@
 
 <div class="card-custom shadow-sm p-4">
     <h5 class="mb-4 fw-bold text-muted text-uppercase">Paquetes Existentes</h5>
-    
     <div class="table-responsive">
         <table class="table table-hover align-middle border-0">
             <thead class="table-light">
                 <tr>
-                    <th class="rounded-start border-0">ID</th>
+                    <th class="border-0 rounded-start">ID</th>
                     <th class="border-0">Nombre</th>
                     <th class="border-0">Descripción</th>
-                    <th class="rounded-end border-0">Precio</th>
+                    <th class="border-0">Precio</th>
+                    <th class="border-0 text-center rounded-end">Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -52,11 +59,13 @@
                     <td class="fw-bold border-0 border-bottom">{{ paquete.nombre_paquete }}</td>
                     <td class="text-muted small border-0 border-bottom">{{ paquete.descripcion }}</td>
                     <td class="text-success fw-bold border-0 border-bottom">${{ "%.2f"|format(paquete.precio) }}</td>
+                    <td class="border-0 border-bottom text-center" style="white-space: nowrap;">
+                        <a href="/editar_paquete/{{ paquete.id_paquete }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">Editar</a>
+                        <a href="/eliminar_paquete/{{ paquete.id_paquete }}" class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="return confirm('¿Seguro que deseas eliminar este paquete?');">Eliminar</a>
+                    </td>
                 </tr>
                 {% else %}
-                <tr>
-                    <td colspan="4" class="text-center text-muted py-4 border-0">Aún no hay paquetes registrados.</td>
-                </tr>
+                <tr><td colspan="5" class="text-center text-muted py-4 border-0">Aún no hay paquetes registrados.</td></tr>
                 {% endfor %}
             </tbody>
         </table>
