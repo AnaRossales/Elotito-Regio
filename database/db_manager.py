@@ -284,8 +284,9 @@ def actualizar_cliente_db(conexion, cliente):
 def get_usuario_por_nombre(conexion, nombre_usuario):
     cursor = None
     try:
-        # Usamos dictionary=True para que devuelva un diccionario fácil de leer en app_web.py
-        cursor = conexion.cursor(dictionary=True)
+        # ESTA ES LA LÍNEA CRÍTICA: Añade dictionary=True
+        cursor = conexion.cursor(dictionary=True) 
+        
         cursor.execute("SELECT * FROM usuarios WHERE nombre_usuario = %s", (nombre_usuario,))
         usuario = cursor.fetchone()
         return usuario
@@ -316,7 +317,26 @@ def get_dashboard_stats(conexion):
     finally:
         if cursor: cursor.close()
     return stats
-
+def get_paquetes_db(conexion):
+    cursor = conexion.cursor(dictionary=True)
+    # Esta consulta agrupa los nombres y cantidades de los insumos en una sola cadena
+    sql = """
+        SELECT p.*, 
+               GROUP_CONCAT(CONCAT('{"nombre":"', i.nombre_insumo, '","cantidad":', pi.cantidad_necesaria, '}') SEPARATOR ',') as insumos_info
+        FROM paquetes p
+        LEFT JOIN paquete_insumo pi ON p.id_paquete = pi.id_paquete
+        LEFT JOIN insumos i ON pi.id_insumo = i.id_insumo
+        GROUP BY p.id_paquete
+    """
+    cursor.execute(sql)
+    paquetes = cursor.fetchall()
+    
+    # Formateamos para que el JavaScript lo entienda como una lista real
+    for p in paquetes:
+        p['insumos_json'] = f"[{p['insumos_info']}]" if p['insumos_info'] else "[]"
+        
+    cursor.close()
+    return paquetes
 def abonar_evento_db(conexion, id_evento, monto):
     cursor = None
     try:
@@ -384,6 +404,170 @@ def get_insumos_db(conexion):
     cursor.close()
     return insumos
 
+def update_paquete(id_paquete, nombre, precio, descripcion):
+    conexion = crear_conexion()# Asegúrate de que así se llame tu función de conexión
+    try:
+        with conexion.cursor() as cursor:
+            sql = """
+                UPDATE paquetes 
+                SET nombre_paquete = %s, 
+                    precio = %s, 
+                    descripcion = %s 
+                WHERE id_paquete = %s
+            """
+            cursor.execute(sql, (nombre, precio, descripcion, id_paquete))
+            conexion.commit()
+            print(f"Paquete {id_paquete} actualizado correctamente.")
+    except Exception as e:
+        print(f"Error al actualizar paquete: {e}")
+    finally:
+        conexion.close()
+
+
+# --- FUNCIONES PARA PROVEEDORES ---
+
+def obtener_proveedores():
+    conexion = crear_conexion()
+    proveedores = []
+    try:
+        # Intentamos usar dictionary=True para que funcione p.nombre_contacto
+        with conexion.cursor(dictionary=True) as cursor:
+            cursor.execute("SELECT id_proveedor, contacto_nombre, razon_social, rfc, telefono, email FROM proveedores")
+            proveedores = cursor.fetchall()
+    except Exception as e:
+        print(f"Error al obtener proveedores: {e}")
+        # Si falla el diccionario, lo intentamos normal y lo convertimos a mano
+        with conexion.cursor() as cursor:
+            cursor.execute("SELECT id_proveedor, contacto_nombre, razon_social, rfc, telefono, email FROM proveedores")
+            columnas = [col[0] for col in cursor.description]
+            proveedores = [dict(zip(columnas, fila)) for fila in cursor.fetchall()]
+    finally:
+        conexion.close()
+    return proveedores
+
+def insertar_proveedor(nombre, razon, rfc, tel, email):
+    conexion = crear_conexion()
+    try:
+        with conexion.cursor() as cursor:
+            sql = """INSERT INTO proveedores (contacto_nombre, razon_social, rfc, telefono, email) 
+                     VALUES (%s, %s, %s, %s, %s)"""
+            cursor.execute(sql, (nombre, razon, rfc, tel, email))
+            conexion.commit()
+    except Exception as e:
+        print(f"Error al insertar proveedor: {e}")
+    finally:
+        conexion.close()
+
+def update_proveedor(id_p, nombre, razon, rfc, tel, email):
+    conexion = crear_conexion()
+    try:
+        with conexion.cursor() as cursor:
+            sql = """UPDATE proveedores 
+                     SET contacto_nombre=%s, razon_social=%s, rfc=%s, telefono=%s, email=%s 
+                     WHERE id_proveedor=%s"""
+            cursor.execute(sql, (nombre, razon, rfc, tel, email, id_p))
+            conexion.commit()
+    except Exception as e:
+        print(f"Error al actualizar proveedor: {e}")
+    finally:
+        conexion.close()
+
+def borrar_proveedor(id_p):
+    conexion = crear_conexion()
+    try:
+        with conexion.cursor() as cursor:
+            cursor.execute("DELETE FROM proveedores WHERE id_proveedor = %s", (id_p,))
+            conexion.commit()
+    except Exception as e:
+        print(f"Error al borrar proveedor: {e}")
+    finally:
+        conexion.close()
+
+def update_proveedor(id_p, nombre_empresa, contacto_nombre, razon, rfc, tel, email):
+    conexion = crear_conexion()
+    try:
+        with conexion.cursor() as cursor:
+            sql = """UPDATE proveedores 
+                     SET nombre_empresa=%s, contacto_nombre=%s, razon_social=%s, rfc=%s, telefono=%s, email=%s 
+                     WHERE id_proveedor=%s"""
+            cursor.execute(sql, (nombre_empresa, contacto_nombre, razon, rfc, tel, email, id_p))
+            conexion.commit()
+    except Exception as e:
+        print(f"Error al actualizar proveedor: {e}")
+    finally:
+        conexion.close()
+
+def borrar_proveedor(id_p):
+    conexion = crear_conexion()
+    try:
+        with conexion.cursor() as cursor:
+            cursor.execute("DELETE FROM proveedores WHERE id_proveedor = %s", (id_p,))
+            conexion.commit()
+    except Exception as e:
+        print(f"Error al borrar proveedor: {e}")
+    finally:
+        conexion.close()
+
+# ==========================================
+# FUNCIONES DE INSUMOS
+# ==========================================
+
+def obtener_insumos_completos():
+    conexion = crear_conexion()
+    try:
+        with conexion.cursor(dictionary=True) as cursor:
+            # Hacemos JOIN para traer los datos del proveedor si es que tiene uno asignado
+            sql = """
+                SELECT i.*, p.nombre_empresa, p.contacto_nombre 
+                FROM insumos i 
+                LEFT JOIN proveedores p ON i.id_proveedor = p.id_proveedor
+                ORDER BY i.nombre_insumo ASC
+            """
+            cursor.execute(sql)
+            return cursor.fetchall()
+    except Exception as e:
+        print(f"Error al obtener insumos: {e}")
+        return []
+    finally:
+        conexion.close()
+
+def insertar_insumo(nombre, costo, unidad, prov_id):
+    conexion = crear_conexion()
+    try:
+        with conexion.cursor() as cursor:
+            sql = "INSERT INTO insumos (nombre_insumo, costo_unitario, unidad_medida, id_proveedor) VALUES (%s, %s, %s, %s)"
+            # Si prov_id viene vacío del formulario, mandamos None para que SQL guarde NULL
+            val_prov = prov_id if prov_id and str(prov_id).strip() != "" else None
+            cursor.execute(sql, (nombre, costo, unidad, val_prov))
+            conexion.commit()
+    except Exception as e:
+        print(f"Error al insertar insumo: {e}")
+    finally:
+        conexion.close()
+
+def update_insumo(id_insumo, nombre, costo, unidad, prov_id):
+    conexion = crear_conexion()
+    try:
+        with conexion.cursor() as cursor:
+            sql = "UPDATE insumos SET nombre_insumo=%s, costo_unitario=%s, unidad_medida=%s, id_proveedor=%s WHERE id_insumo=%s"
+            val_prov = prov_id if prov_id and str(prov_id).strip() != "" else None
+            cursor.execute(sql, (nombre, costo, unidad, val_prov, id_insumo))
+            conexion.commit()
+    except Exception as e:
+        print(f"Error al actualizar insumo: {e}")
+    finally:
+        conexion.close()
+
+def borrar_insumo(id_insumo):
+    conexion = crear_conexion()
+    try:
+        with conexion.cursor() as cursor:
+            cursor.execute("DELETE FROM insumos WHERE id_insumo = %s", (id_insumo,))
+            conexion.commit()
+    except Exception as e:
+        print(f"Error al borrar insumo: {e}")
+    finally:
+        conexion.close()
 def guardar_paquete_con_insumos(conexion, nombre, descripcion, precio, insumos_seleccionados):
     cursor = conexion.cursor()
     try:

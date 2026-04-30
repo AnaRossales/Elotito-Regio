@@ -3,13 +3,13 @@
 {% block content %}
 
 <div class="container-fluid px-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-4">
         <div>
             <h1 class="fw-bold text-dark m-0">Centro de Informes Operativos</h1>
             <p class="text-muted">Resumen ejecutivo y análisis de eventos</p>
         </div>
         <div class="text-end">
-            <a href="/registrar_evento" class="btn btn-custom-orange shadow-sm">+ Nueva Venta</a>
+            <a href="/registrar_evento" class="btn btn-warning rounded-pill px-4 fw-bold shadow-sm">+ Nueva Venta</a>
         </div>
     </div>
 
@@ -47,19 +47,18 @@
 
     <div class="row g-4">
         <div class="col-lg-8">
-            
             {% if proximo_evento %}
             <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4 position-relative overflow-hidden">
                 <div class="position-absolute top-0 start-0 w-100" style="height: 4px; background-color: #4CAF50;"></div>
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h6 class="text-uppercase fw-bold text-success mb-1"><i class="bi bi-star-fill me-1"></i> Siguiente Evento</h6>
+                        <h6 class="text-uppercase fw-bold text-success mb-1 small"><i class="bi bi-star-fill me-1"></i> Siguiente Evento</h6>
                         <h4 class="fw-bold text-dark mb-1">{{ proximo_evento.cliente }}</h4>
-                        <p class="text-muted mb-0"><i class="bi bi-geo-alt-fill text-danger me-1"></i> {{ proximo_evento.lugar }}</p>
+                        <p class="text-muted mb-0 small"><i class="bi bi-geo-alt-fill text-danger me-1"></i> {{ proximo_evento.lugar }}</p>
                     </div>
-                    <div class="text-end bg-light p-3 rounded-4 shadow-sm border" style="border-color: #f0f0f0 !important;">
-                        <h3 class="fw-bold text-dark mb-0"><i class="bi bi-calendar-event me-2 text-warning"></i>{{ proximo_evento.fecha }}</h3>
-                        <span class="text-muted fw-bold">{{ proximo_evento.hora }} hrs</span>
+                    <div class="text-end bg-light p-3 rounded-4 border border-light-subtle">
+                        <h3 class="fw-bold text-dark mb-0 text-nowrap"><i class="bi bi-calendar-event me-2 text-warning"></i>{{ proximo_evento.fecha }}</h3>
+                        <span class="text-muted fw-bold small">{{ proximo_evento.hora }} hrs</span>
                     </div>
                 </div>
             </div>
@@ -67,38 +66,38 @@
 
             <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h5 class="fw-bold text-uppercase text-muted m-0">Agenda Operativa Reciente</h5>
-                    <a href="/eventos_lista" class="btn btn-sm btn-outline-secondary rounded-pill">Ver historial completo</a>
+                    <h5 class="fw-bold text-uppercase text-muted m-0 small">Agenda Operativa Reciente</h5>
+                    <a href="/eventos_lista" class="btn btn-sm btn-outline-secondary rounded-pill px-3">Ver historial completo</a>
                 </div>
-                <div class="table-responsive border-0">
-                    <table class="table table-borderless align-middle table-hover">
-                        <thead style="border-bottom: 2px solid #eee; color: #a0a0a0; font-size: 0.85rem; text-transform: uppercase;">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="bg-light small text-uppercase text-muted">
                             <tr>
-                                <th class="fw-bold py-3">Fecha</th>
-                                <th class="fw-bold py-3">Cliente</th>
-                                <th class="fw-bold py-3">Ubicación</th>
-                                <th class="fw-bold py-3">Saldo</th>
-                                <th class="fw-bold py-3 text-center">Estado</th>
+                                <th class="py-3 px-3">Fecha</th>
+                                <th class="py-3">Cliente</th>
+                                <th class="py-3">Ubicación</th>
+                                <th class="py-3">Saldo</th>
+                                <th class="py-3 text-center">Estado</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for e in ultimos_eventos %}
                                 {% set adeudo = e.total - e.adelanto %}
-                                <tr style="border-bottom: 1px solid #f8f9fa;">
-                                    <td class="py-3 text-muted fw-bold">{{ e.fecha }}</td>
+                                <tr>
+                                    <td class="py-3 px-3 text-muted fw-bold">{{ e.fecha }}</td>
                                     <td class="py-3 fw-bold text-dark">{{ e.cliente }}</td>
                                     <td class="py-3 small text-muted">{{ e.lugar }}</td>
                                     <td class="py-3 fw-bold text-danger">${{ "%.2f"|format(adeudo) }}</td>
                                     <td class="py-3 text-center">
                                         {% if adeudo <= 0 %}
-                                            <span class="badge bg-success-subtle text-success rounded-pill px-3 py-2">Liquidado</span>
+                                            <span class="badge bg-success-subtle text-success rounded-pill px-3">Liquidado</span>
                                         {% else %}
-                                            <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill px-3 py-2">Pendiente</span>
+                                            <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill px-3">Pendiente</span>
                                         {% endif %}
                                     </td>
                                 </tr>
                             {% else %}
-                                <tr><td colspan="5" class="text-center py-4 text-muted">No hay datos para mostrar.</td></tr>
+                                <tr><td colspan="5" class="text-center py-5 text-muted">No hay eventos recientes.</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -110,41 +109,156 @@
             <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
                 <h5 class="fw-bold text-uppercase text-muted mb-3 small">Resumen de Cobranza</h5>
                 <div class="d-flex justify-content-between mb-2">
-                    <span>Adelantos en caja:</span>
+                    <span class="text-muted small">Adelantos en caja:</span>
                     <span class="text-success fw-bold">${{ "%.2f"|format(stats.adelantos_totales) }}</span>
                 </div>
                 
-                {% set porcentaje_cobro = 0 %}
-                {% if stats.ingresos_totales > 0 %}
-                    {% set porcentaje_cobro = (stats.adelantos_totales / stats.ingresos_totales) * 100 %}
-                {% endif %}
+                {% set porcentaje_cobro = (stats.adelantos_totales / stats.ingresos_totales * 100) if stats.ingresos_totales > 0 else 0 %}
                 
-                <div class="progress mb-3" style="height: 8px;">
+                <div class="progress mb-3" style="height: 8px; border-radius: 10px;">
                     <div class="progress-bar bg-success" style="width: {{ porcentaje_cobro }}%"></div>
                 </div>
                 <div class="d-flex justify-content-between small text-muted fw-bold">
-                    <span>Cobrado: {{ "%.0f"|format(porcentaje_cobro) }}%</span>
-                    <span>Por cobrar: ${{ "%.2f"|format(stats.ingresos_totales - stats.adelantos_totales) }}</span>
+                    <span>{{ "%.0f"|format(porcentaje_cobro) }}% Cobrado</span>
+                    <span>Restan: ${{ "%.2f"|format(stats.ingresos_totales - stats.adelantos_totales) }}</span>
                 </div>
             </div>
 
-            <div class="card border-0 shadow-sm rounded-4 p-4 mb-4" style="background-color: #fcfcfc;">
-                <h5 class="fw-bold text-uppercase text-muted mb-3 small">Herramientas de Control</h5>
-                <div class="d-grid gap-3">
-                    <a href="/paquetes" class="btn btn-white text-start p-3 shadow-sm" style="border: 1px solid #eaeaea; background: white; border-radius: 12px; transition: 0.2s;">
-                        <i class="bi bi-box-seam me-2 text-warning fs-5 align-middle"></i> <span class="fw-bold text-dark">Ajustar Precios</span>
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                <h5 class="fw-bold text-uppercase text-muted mb-3 small">Panel de Gestión</h5>
+                
+                <div class="d-grid gap-1">
+                    <a href="/paquetes" class="menu-item-custom">
+                        <div class="icon-box bg-warning-subtle">
+                            <i class="bi bi-box-seam text-warning"></i>
+                        </div>
+                        <div class="ms-3">
+                            <span class="title">Ajustar Precios</span>
+                            <span class="subtitle">Gestión de paquetes</span>
+                        </div>
                     </a>
-                    <a href="/clientes" class="btn btn-white text-start p-3 shadow-sm" style="border: 1px solid #eaeaea; background: white; border-radius: 12px; transition: 0.2s;">
-                        <i class="bi bi-person-gear me-2 text-primary fs-5 align-middle"></i> <span class="fw-bold text-dark">Depurar Clientes</span>
+
+                    <a href="/clientes" class="menu-item-custom">
+                        <div class="icon-box bg-primary-subtle">
+                            <i class="bi bi-person-gear text-primary"></i>
+                        </div>
+                        <div class="ms-3">
+                            <span class="title">Depurar Clientes</span>
+                            <span class="subtitle">Base de contactos</span>
+                        </div>
                     </a>
-                    <button class="btn btn-white text-start p-3 shadow-sm" style="border: 1px solid #eaeaea; background: white; border-radius: 12px; transition: 0.2s;" onclick="window.print()">
-                        <i class="bi bi-printer me-2 text-success fs-5 align-middle"></i> <span class="fw-bold text-dark">Imprimir Informe</span>
+
+                    <a href="/proveedores" class="menu-item-custom">
+                        <div class="icon-box bg-success-subtle">
+                            <i class="bi bi-truck text-success"></i>
+                        </div>
+                        <div class="ms-3">
+                            <span class="title">Proveedores</span>
+                            <span class="subtitle">Datos fiscales y RFC</span>
+                        </div>
+                    </a>
+
+                    <a href="/usuarios" class="menu-item-custom">
+                        <div class="icon-box bg-info-subtle">
+                            <i class="bi bi-people text-info"></i>
+                        </div>
+                        <div class="ms-3">
+                            <span class="title">Empleados</span>
+                            <span class="subtitle">Control de acceso</span>
+                        </div>
+                    </a>
+
+                    <hr class="my-3 opacity-25">
+
+                    <button onclick="window.print()" class="menu-item-custom w-100 border-0 bg-transparent">
+                        <div class="icon-box bg-secondary-subtle">
+                            <i class="bi bi-printer text-secondary"></i>
+                        </div>
+                        <div class="ms-3 text-start">
+                            <span class="title">Imprimir Informe</span>
+                            <span class="subtitle">Generar reporte PDF</span>
+                        </div>
                     </button>
                 </div>
             </div>
-            
         </div>
     </div>
 </div>
+
+<style>
+    /* Estilo para los botones del panel lateral */
+    .menu-item-custom {
+        display: flex;
+        align-items: center;
+        padding: 12px;
+        text-decoration: none;
+        border-radius: 12px;
+        transition: all 0.2s ease-in-out;
+        border: 1px solid transparent;
+    }
+
+    .menu-item-custom:hover {
+        background-color: #f8f9fa;
+        border-color: #f1f3f5;
+        transform: translateX(5px);
+    }
+
+    .icon-box {
+        width: 42px;
+        height: 42px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+
+    .menu-item-custom .title {
+        display: block;
+        font-weight: 700;
+        font-size: 0.85rem;
+        color: #212529;
+        line-height: 1.2;
+    }
+
+    .menu-item-custom .subtitle {
+        display: block;
+        font-size: 0.7rem;
+        color: #868e96;
+    }
+
+    /* Colores Pastel */
+    .bg-warning-subtle { background-color: #fff9db !important; }
+    .bg-primary-subtle { background-color: #e7f5ff !important; }
+    .bg-success-subtle { background-color: #ebfbee !important; }
+    .bg-info-subtle { background-color: #e3fafc !important; }
+    .bg-secondary-subtle { background-color: #f1f3f5 !important; }
+    
+    .text-info { color: #1098ad !important; }
+
+    /* Estilos de Tabla */
+    .table thead th {
+        border-top: none;
+        letter-spacing: 0.5px;
+    }
+    
+    /* Botón Nueva Venta personalizado */
+    .btn-custom-orange {
+        background-color: #F57C00;
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 50px;
+        font-weight: bold;
+        transition: 0.3s;
+    }
+    
+    .btn-custom-orange:hover {
+        background-color: #E65100;
+        color: white;
+        transform: scale(1.05);
+    }
+</style>
 
 {% endblock %}

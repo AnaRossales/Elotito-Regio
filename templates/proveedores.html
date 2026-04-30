@@ -1,0 +1,190 @@
+{% extends "base.html" %}
+{% block title %}Gestión de Proveedores - Elotito Regio{% endblock %}
+{% block content %}
+
+<div class="container py-4" style="max-width: 900px;">
+    
+    <div class="position-relative text-center mb-5 mt-3">
+        <div class="position-absolute top-0 end-0">
+        </div>
+        
+        <div class="bg-warning text-white rounded-circle d-inline-flex align-items-center justify-content-center mb-3 shadow-sm" style="width: 75px; height: 75px; font-size: 2rem; background-color: #ffaa00 !important;">
+            <i class="bi bi-truck"></i> </div>
+        
+        <h2 class="fw-bold text-dark m-0">Proveedores</h2>
+        <p class="text-muted mt-2">Administración de contactos y datos fiscales.</p>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 p-4 mb-5">
+        <form action="/guardar_proveedor" method="POST" id="formProveedores">
+            <input type="hidden" name="id_proveedor" id="id_proveedor_edit">
+
+            <div class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold text-muted text-uppercase ms-2">Nombre de la Empresa</label>
+                    <input type="text" name="nombre_empresa" class="form-control input-pildora border-light-subtle shadow-sm p-2 px-3" placeholder="Ej: Tostitos, Coca-Cola..." required>
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold text-muted text-uppercase ms-2">Nombre del Contacto</label>
+                    <input type="text" name="contacto_nombre" class="form-control input-pildora border-light-subtle shadow-sm p-2 px-3" placeholder="Ej: Juan Pérez">
+                </div>
+                
+                <div class="col-md-8">
+                    <label class="form-label small fw-bold text-muted text-uppercase ms-2">Razón Social</label>
+                    <input type="text" name="razon_social" class="form-control input-pildora border-light-subtle shadow-sm p-2 px-3" placeholder="Ej: Insumos del Norte S.A. de C.V.">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small fw-bold text-muted text-uppercase ms-2">RFC</label>
+                    <input type="text" name="rfc" class="form-control input-pildora border-light-subtle shadow-sm p-2 px-3" placeholder="12 o 13 caracteres" maxlength="13">
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold text-muted text-uppercase ms-2">Teléfono</label>
+                    <input type="text" name="telefono" class="form-control input-pildora border-light-subtle shadow-sm p-2 px-3" placeholder="81-0000-0000">
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label small fw-bold text-muted text-uppercase ms-2">Correo Electrónico</label>
+                    <input type="email" name="email" class="form-control input-pildora border-light-subtle shadow-sm p-2 px-3" placeholder="proveedor@ejemplo.com">
+                </div>
+            </div>
+
+            <div class="text-center mt-5">
+                <button type="submit" id="btnAccion" class="btn btn-warning rounded-pill px-5 py-2 fw-bold shadow-sm">
+                    GUARDAR PROVEEDOR
+                </button>
+                <button type="button" id="btnCancelar" class="btn btn-outline-secondary rounded-pill px-4 py-2 ms-2 d-none" onclick="limpiarFormulario()">
+                    CANCELAR
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div class="mb-4 position-relative">
+        <i class="bi bi-search position-absolute top-50 start-0 translate-middle-y ms-4 text-muted"></i>
+        <input type="text" id="buscadorProveedores" class="form-control input-pildora border-0 shadow-sm ps-5 py-3" placeholder="Buscar por empresa, contacto o RFC..." onkeyup="filtrarTabla()">
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 p-4">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle" id="tablaProveedores">
+                <thead class="bg-light small text-muted">
+                    <tr>
+                        <th class="py-3 px-3 border-0 rounded-start-3">Empresa / Contacto</th>
+                        <th class="py-3 border-0">Fiscal</th>
+                        <th class="py-3 border-0">Contacto</th>
+                        <th class="py-3 text-end border-0 rounded-end-3">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for p in proveedores %}
+                    <tr class="fila-proveedor">
+                        <td class="py-3 px-3">
+                            <span class="fw-bold text-dark d-block">{{ p.nombre_empresa or 'Sin Empresa' }}</span>
+                            <span class="text-muted small"><i class="bi bi-person me-1"></i>{{ p.contacto_nombre or 'Sin Contacto' }}</span>
+                        </td>
+                        <td class="py-3">
+                            <span class="text-muted small d-block">RS: {{ p.razon_social or 'N/A' }}</span>
+                            <span class="badge bg-light text-dark border fw-normal mt-1">{{ p.rfc or 'N/A' }}</span>
+                        </td>
+                        <td class="py-3 small">
+                            <i class="bi bi-telephone text-muted me-1"></i> {{ p.telefono }}<br>
+                            <i class="bi bi-envelope text-muted me-1"></i> {{ p.email }}
+                        </td>
+                        <td class="text-end">
+                            <div class="d-flex justify-content-end gap-1">
+                                <button class="action-btn edit" title="Editar" 
+                                        onclick="cargarEdicion('{{ p.id_proveedor }}', '{{ p.nombre_empresa }}', '{{ p.contacto_nombre }}', '{{ p.razon_social }}', '{{ p.rfc }}', '{{ p.telefono }}', '{{ p.email }}')">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                                <button class="action-btn delete" title="Eliminar" 
+                                        onclick="confirmarBorrarProveedor('{{ p.id_proveedor }}', '{{ p.nombre_empresa }}')">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr id="filaVacia"><td colspan="4" class="text-center py-5 text-muted">No hay proveedores registrados aún.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Diseño de Píldora para unificar el estilo con Insumos */
+    .input-pildora {
+        border-radius: 50rem !important;
+    }
+
+    /* Botones de Acción en la Tabla */
+    .action-btn { width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border: none; background: transparent; border-radius: 8px; color: #adb5bd; transition: all 0.2s; font-size: 1.1rem; }
+    .action-btn.edit:hover { background-color: #fff9db; color: #fab005; }
+    .action-btn.delete:hover { background-color: #fff5f5; color: #fa5252; }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    // --- LÓGICA DE EDICIÓN ---
+    function cargarEdicion(id, empresa, contacto, razon, rfc, tel, email) {
+        document.getElementById('id_proveedor_edit').value = id;
+        document.querySelector('input[name="nombre_empresa"]').value = empresa !== 'None' ? empresa : '';
+        document.querySelector('input[name="contacto_nombre"]').value = contacto !== 'None' ? contacto : '';
+        document.querySelector('input[name="razon_social"]').value = razon !== 'None' ? razon : '';
+        document.querySelector('input[name="rfc"]').value = rfc !== 'None' ? rfc : '';
+        document.querySelector('input[name="telefono"]').value = tel !== 'None' ? tel : '';
+        document.querySelector('input[name="email"]').value = email !== 'None' ? email : '';
+
+        const btn = document.getElementById('btnAccion');
+        btn.innerText = "ACTUALIZAR PROVEEDOR";
+        btn.classList.replace('btn-warning', 'btn-success');
+        document.getElementById('btnCancelar').classList.remove('d-none');
+        document.getElementById('formProveedores').action = "/actualizar_proveedor";
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // --- LIMPIAR FORMULARIO ---
+    function limpiarFormulario() {
+        document.getElementById('formProveedores').reset();
+        document.getElementById('id_proveedor_edit').value = "";
+        const btn = document.getElementById('btnAccion');
+        btn.innerText = "GUARDAR PROVEEDOR";
+        btn.classList.replace('btn-success', 'btn-warning');
+        document.getElementById('btnCancelar').classList.add('d-none');
+        document.getElementById('formProveedores').action = "/guardar_proveedor";
+    }
+
+    // --- ALERTA DE BORRADO ---
+    function confirmarBorrarProveedor(id, nombre) {
+        Swal.fire({
+            title: '¿Eliminar proveedor?',
+            text: `Borrarás a "${nombre}". Esta acción no se puede deshacer.`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#fa5252',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = `/eliminar_proveedor/${id}`;
+            }
+        });
+    }
+
+    // --- BUSCADOR EN TIEMPO REAL ---
+    function filtrarTabla() {
+        let input = document.getElementById("buscadorProveedores").value.toLowerCase();
+        let filas = document.querySelectorAll(".fila-proveedor");
+        
+        filas.forEach(fila => {
+            let textoFila = fila.innerText.toLowerCase();
+            if (textoFila.includes(input)) {
+                fila.style.display = ""; 
+            } else {
+                fila.style.display = "none"; 
+            }
+        });
+    }
+</script>
+{% endblock %}

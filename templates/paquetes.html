@@ -11,90 +11,354 @@
     </div>
 </div>
 
-<div class="card border-0 shadow-sm rounded-4 mx-auto p-4 mb-5" style="max-width: 900px;">
+<div class="card border-0 shadow-sm rounded-4 mx-auto p-4 mb-4" style="max-width: 900px;">
     <form action="/guardar_paquete" method="POST" id="formPaquetes">
+        <input type="hidden" name="id_paquete" id="id_paquete_edit">
         <div class="row g-3">
-            <div class="col-md-8">
+            <div class="col-md-12">
                 <label class="small fw-bold text-muted mb-1 text-uppercase">Nombre del Paquete</label>
                 <input type="text" name="nombre_paquete" class="form-control rounded-3 border-light-subtle bg-light" required placeholder="Ej. Paquete Básico 50">
             </div>
-            <div class="col-md-4">
-                <label class="small fw-bold text-muted mb-1 text-uppercase">Precio Sugerido ($)</label>
-                <input type="number" id="precio_total" name="precio" class="form-control rounded-3 border-warning fw-bold text-dark bg-white" readonly>
-                <small class="text-muted" style="font-size: 0.7rem;">Autocalculado por insumos</small>
+            <div class="col-md-12">
+                <label class="small fw-bold text-muted mb-1 text-uppercase">Descripción / Notas</label>
+                <textarea name="descripcion" class="form-control rounded-3 border-light-subtle bg-light" rows="2" placeholder="Detalla qué incluye o notas especiales..."></textarea>
             </div>
-            
-            <div class="col-12">
-                <label class="small fw-bold text-muted mb-1 text-uppercase">Insumos Requeridos</label>
-                <div id="contenedor-insumos">
-                    <div class="row g-2 mb-2 insumo-fila align-items-end">
-                        <div class="col-6">
-                            <label class="small fw-bold text-muted opacity-75">Insumo</label>
-                           <select class="form-select select-insumo" name="insumos[]" onchange="calcularCosto()">
-                            <option value="0" data-costo="0">-- Seleccionar --</option>
-                            
-                            {% for insumo in lista_insumos %}
-                            <option value="{{ insumo.id_insumo }}" data-costo="{{ insumo.costo_unitario }}">
-                                {{ insumo.nombre_insumo }} (${{ insumo.costo_unitario }})
-                            </option>
-                            {% endfor %}
-                            
-                        </select>
-                        </div>
-                        <div class="col-4">
-                            <label class="small fw-bold text-muted opacity-75">Cantidad</label>
-                            <input type="number" step="0.1" class="form-control cant-insumo rounded-3" name="cantidades[]" placeholder="0.0" oninput="calcularCosto()">
-                        </div>
-                        <div class="col-2">
-                            <button type="button" class="btn btn-outline-danger border-0" onclick="eliminarFila(this)"><i class="bi bi-x-circle-fill"></i></button>
-                        </div>
-                    </div>
+
+            <div class="col-md-4">
+                <label class="small fw-bold text-muted mb-1 text-uppercase">Costo Producción</label>
+                <div class="input-group border rounded-3 shadow-sm">
+                    <input type="number" id="costo_insumos" class="form-control border-0 bg-white" readonly value="0.00">
+                    <span class="input-group-text border-0 bg-white text-muted">$</span>
                 </div>
-                <button type="button" class="btn btn-sm btn-dark mt-2 rounded-pill" onclick="agregarInsumo()">+ Agregar Insumo</button>
+            </div>
+            <div class="col-md-4">
+                <label class="small fw-bold text-muted mb-1 text-uppercase">Precio Sugerido</label>
+                <div class="input-group border rounded-3 shadow-sm">
+                    <input type="number" id="precio_sugerido" class="form-control border-0 bg-white" readonly value="0.00">
+                    <span class="input-group-text border-0 bg-white text-muted">$</span>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <label class="small fw-bold text-muted mb-1 text-uppercase">Precio de Venta</label>
+                <div class="input-group border rounded-3 shadow-sm" id="group-precio-final">
+                    <input type="number" step="0.01" id="precio_final" name="precio" class="form-control border-0" required placeholder="0.00" oninput="validarPrecio()">
+                    <span class="input-group-text border-0 bg-white text-muted">$</span>
+                </div>
+                <div id="aviso-precio" class="text-danger small fw-bold mt-1 d-none">¡Precio por debajo del sugerido!</div>
             </div>
         </div>
 
-        <div class="text-center mt-5">
-            <button type="submit" class="btn btn-warning rounded-pill px-5 fw-bold shadow-sm">Guardar Paquete</button>
+        <hr class="my-4 opacity-25">
+
+        <div class="col-12">
+            <label class="small fw-bold text-muted mb-1 text-uppercase">Insumos Requeridos</label>
+            <div id="contenedor-insumos">
+                <div class="row g-2 mb-2 insumo-fila align-items-end">
+                    <div class="col-6">
+                        <select class="form-select select-insumo rounded-3" name="insumos[]" onchange="calcularCosto()">
+                            <option value="0" data-costo="0">-- Seleccionar Insumo --</option>
+                            {% for insumo in lista_insumos %}
+                            <option value="{{ insumo.id_insumo }}" data-costo="{{ insumo.costo_unitario }}">{{ insumo.nombre_insumo }} (${{ insumo.costo_unitario }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-4">
+                        <input type="number" step="0.1" class="form-control cant-insumo rounded-3" name="cantidades[]" placeholder="Cant." oninput="calcularCosto()">
+                    </div>
+                    <div class="col-2 text-end">
+                        <button type="button" class="btn btn-outline-danger border-0" onclick="eliminarFila(this)"><i class="bi bi-x-circle-fill"></i></button>
+                    </div>
+                </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-dark mt-2 rounded-pill shadow-sm" onclick="agregarInsumo()">+ Agregar Insumo</button>
         </div>
+
+<div class="text-center mt-5">
+    <button type="submit" id="btnAccion" class="btn btn-warning rounded-pill px-5 py-2 fw-bold shadow-sm text-uppercase">
+        Guardar Paquete
+    </button>
+    
+    <button type="button" id="btnCancelar" class="btn btn-outline-secondary rounded-pill px-4 py-2 ms-2 d-none" onclick="limpiarFormulario()">
+        Cancelar
+    </button>
+</div>
     </form>
 </div>
 
+<div class="card border-0 shadow-sm rounded-4 mx-auto p-4" style="max-width: 900px;">
+    <h5 class="fw-bold text-dark mb-4">Paquetes Registrados</h5>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle w-100 m-0">
+            <thead class="bg-light">
+                <tr>
+                    <th style="width: 50%;">Paquete</th>
+                    <th class="text-center" style="width: 25%;">Venta</th>
+                    <th class="text-end" style="width: 25%;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for paquete in lista_paquetes %}
+                <tr>
+                    <td class="fw-bold text-dark">{{ paquete.nombre_paquete }}</td>
+                    <td class="text-center fw-bold text-dark">${{ "%.2f"|format(paquete.precio) }}</td>
+                    <td class="text-end">
+                        <div class="d-flex justify-content-end gap-1">
+                            <button class="action-btn edit" title="Editar" 
+                                    onclick="cargarEdicion('{{ paquete.id_paquete }}', '{{ paquete.nombre_paquete }}', '{{ paquete.precio }}', '{{ paquete.descripcion }}')">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+
+                            <button class="action-btn view" title="Ver detalles" 
+                                    onclick="verDetallesCompletos('{{ paquete.nombre_paquete }}', '{{ paquete.descripcion }}', '{{ paquete.insumos_json }}')">
+                                <i class="bi bi-eye"></i>
+                            </button>
+
+                            <button class="action-btn delete" title="Eliminar" 
+                                    onclick="confirmarBorrarPaquete('{{ paquete.id_paquete }}', '{{ paquete.nombre_paquete }}')">
+                                <i class="bi bi-trash3"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+// --- NUEVAS FUNCIONES DE EDICIÓN ---
+
+function cargarEdicion(id, nombre, precio, descripcion) {
+    console.log("Editando paquete:", id);
+    
+    // 1. Llenar los campos ocultos y visibles
+    document.getElementById('id_paquete_edit').value = id;
+    document.querySelector('input[name="nombre_paquete"]').value = nombre;
+    document.querySelector('textarea[name="descripcion"]').value = descripcion;
+    document.getElementById('precio_final').value = precio;
+
+    // 2. Cambiar la apariencia del botón principal
+    const btnAccion = document.getElementById('btnAccion');
+    btnAccion.innerText = "Actualizar Paquete";
+    btnAccion.classList.remove('btn-warning');
+    btnAccion.classList.add('btn-success');
+
+    // 3. Mostrar el botón de cancelar
+    document.getElementById('btnCancelar').classList.remove('d-none');
+    
+    // 4. Cambiar la ruta del formulario a la de actualización
+    document.getElementById('formPaquetes').action = "/actualizar_paquete";
+
+    // 5. Scroll suave hacia arriba
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function limpiarFormulario() {
+    document.getElementById('formPaquetes').reset();
+    document.getElementById('id_paquete_edit').value = "";
+    
+    const btnAccion = document.getElementById('btnAccion');
+    btnAccion.innerText = "Guardar Paquete";
+    btnAccion.classList.remove('btn-success');
+    btnAccion.classList.add('btn-warning');
+
+    document.getElementById('btnCancelar').classList.add('d-none');
+    document.getElementById('formPaquetes').action = "/guardar_paquete";
+    
+    // Resetear visuales de costo
+    document.getElementById('costo_insumos').value = "0.00";
+    document.getElementById('precio_sugerido').value = "0.00";
+}
+
+// --- TUS FUNCIONES ANTERIORES (MANTENIDAS) ---
+
 function agregarInsumo() {
     const contenedor = document.getElementById('contenedor-insumos');
     const nuevaFila = contenedor.querySelector('.insumo-fila').cloneNode(true);
     nuevaFila.querySelector('input').value = "";
+    nuevaFila.querySelector('select').value = "0";
     contenedor.appendChild(nuevaFila);
 }
 
 function eliminarFila(btn) {
     const filas = document.querySelectorAll('.insumo-fila');
-    if(filas.length > 1) btn.closest('.insumo-fila').remove();
-    calcularCosto();
+    if(filas.length > 1) {
+        btn.closest('.insumo-fila').remove();
+        calcularCosto();
+    }
+}
+
+function confirmarBorrarPaquete(id, nombre) {
+    Swal.fire({
+        title: '¿Eliminar paquete?',
+        text: `Estás por borrar "${nombre}".`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, eliminar',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = `/eliminar_paquete/${id}`;
+        }
+    });
+}
+
+function verDetallesCompletos(nombre, descripcion, insumosRaw) {
+    let tablaInsumos = "";
+    try {
+        const insumos = JSON.parse(insumosRaw.replace(/'/g, '"')); 
+        tablaInsumos = `
+            <div class="text-start mt-3">
+                <p class="small text-muted mb-2"><strong>Descripción:</strong> ${descripcion || 'Sin descripción'}</p>
+                <label class="small fw-bold text-uppercase">Insumos incluidos:</label>
+                <table class="table table-sm mt-2" style="font-size: 0.85rem;">
+                    <thead class="table-light">
+                        <tr><th>Insumo</th><th class="text-end">Cant.</th></tr>
+                    </thead>
+                    <tbody>
+                        ${insumos.map(i => `<tr><td>${i.nombre}</td><td class="text-end">${i.cantidad}</td></tr>`).join('')}
+                    </tbody>
+                </table>
+            </div>`;
+    } catch (e) {
+        tablaInsumos = `<p class="text-muted small mt-3">${descripcion || 'Sin detalles'}</p>`;
+    }
+
+    Swal.fire({
+        title: `<span class="fw-bold">${nombre}</span>`,
+        html: tablaInsumos,
+        confirmButtonColor: '#ffc107',
+        confirmButtonText: 'Cerrar',
+        width: '500px'
+    });
 }
 
 function calcularCosto() {
     let costoTotalProduccion = 0;
     const filas = document.querySelectorAll('.insumo-fila');
-    
     filas.forEach(fila => {
         const select = fila.querySelector('.select-insumo');
         const costoUnitario = parseFloat(select.options[select.selectedIndex].dataset.costo) || 0;
         const cantidad = parseFloat(fila.querySelector('.cant-insumo').value) || 0;
-        
         costoTotalProduccion += (costoUnitario * cantidad);
     });
 
-    // Supongamos que quieres ganar el doble (margen del 100% sobre costo)
-    // O puedes dejarlo igual al costo y tú le subes manualmente.
-    let margenGanancia = 1.6; // Multiplicar por 1.6 para ganar el 60%
-    let sugerido = costoTotalProduccion * margenGanancia;
-
-    document.getElementById('precio_total').value = sugerido.toFixed(2);
+    document.getElementById('costo_insumos').value = costoTotalProduccion.toFixed(2);
+    let sugerido = costoTotalProduccion * 1.6; 
+    document.getElementById('precio_sugerido').value = sugerido.toFixed(2);
     
-    // Mostramos un pequeño texto con el costo real para que el admin sepa cuánto gasta
-    document.getElementById('info-costo').innerHTML = `Costo Real: $${costoTotalProduccion.toFixed(2)}`;
+    if(document.getElementById('precio_final').value == "" || document.getElementById('precio_final').value == "0.00") {
+        document.getElementById('precio_final').value = sugerido.toFixed(2);
+    }
+    validarPrecio();
 }
+
+function validarPrecio() {
+    const sugerido = parseFloat(document.getElementById('precio_sugerido').value) || 0;
+    const final = parseFloat(document.getElementById('precio_final').value) || 0;
+    const aviso = document.getElementById('aviso-precio');
+    const group = document.getElementById('group-precio-final');
+
+    if (final < sugerido && final > 0) {
+        aviso.classList.remove('d-none');
+        group.style.borderColor = '#dc3545';
+    } else {
+        aviso.classList.add('d-none');
+        group.style.borderColor = '#dee2e6';
+    }
+}
+
+document.getElementById('formPaquetes').addEventListener('submit', function(e) {
+    e.preventDefault(); 
+    const filas = document.querySelectorAll('.insumo-fila');
+    let tieneInsumoValido = false;
+    
+    filas.forEach(fila => {
+        const idInsumo = fila.querySelector('.select-insumo').value;
+        const cantidad = fila.querySelector('.cant-insumo').value;
+        if (idInsumo !== "0" && cantidad > 0) {
+            tieneInsumoValido = true;
+        }
+    });
+
+    if (!tieneInsumoValido) {
+        Swal.fire({
+            title: 'Paquete Vacío',
+            text: 'Debes seleccionar al menos un insumo con su cantidad.',
+            icon: 'error',
+            confirmButtonColor: '#F57C00'
+        });
+        return;
+    }
+
+    const sugerido = parseFloat(document.getElementById('precio_sugerido').value) || 0;
+    const final = parseFloat(document.getElementById('precio_final').value) || 0;
+
+    if (final < sugerido) {
+        Swal.fire({
+            title: '¿Confirmar Precio Bajo?',
+            text: `El precio de venta ($${final}) es menor al sugerido ($${sugerido}). ¿Deseas guardarlo?`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Sí, guardar',
+            cancelButtonText: 'Corregir',
+            confirmButtonColor: '#4CAF50',
+            cancelButtonColor: '#d33'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                this.submit();
+            }
+        });
+    } else {
+        this.submit();
+    }
+});
 </script>
+<style>
+    .form-control:focus { box-shadow: none; }
+    #group-precio-final { transition: border-color 0.3s; }
+    input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .table th { border: none; }
+
+    /* Botón base: sin bordes, color gris suave */
+    .action-btn {
+        width: 35px;
+        height: 35px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        background: transparent;
+        border-radius: 8px;
+        color: #adb5bd; /* Gris muy ligero */
+        transition: all 0.2s ease;
+        font-size: 1.2rem;
+    }
+
+    /* Efecto Hover: aparece color y un fondo sutil */
+    .action-btn.edit:hover {
+        background-color: #fff9db; /* Amarillo pálido */
+        color: #fab005; /* Dorado */
+    }
+
+    .action-btn.view:hover {
+        background-color: #e7f5ff; /* Azul pálido */
+        color: #228be6;
+    }
+
+    .action-btn.delete:hover {
+        background-color: #fff5f5; /* Rojo pálido */
+        color: #fa5252;
+    }
+
+    /* Para que la tabla se vea más espaciosa */
+    .table td {
+        padding: 15px 10px !important;
+        border-bottom: 1px solid #f8f9fa;
+    }
+</style>
 {% endblock %}

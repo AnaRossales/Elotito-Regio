@@ -226,9 +226,6 @@ def pagina_paquetes():
 def guardar_paquete():
     if requiere_login(): return redirect(url_for('login'))
     con = verificar_conexion()
-    
-    # Aquí puedes usar la función guardar_paquete_con_insumos si ya la tienes en db_manager
-    # Por ahora dejo la lógica básica:
     nuevo_paquete = Paquete(
         nombre=request.form['nombre_paquete'],
         descripcion=request.form.get('descripcion', ''),
@@ -243,6 +240,134 @@ def eliminar_paquete(id):
     con = verificar_conexion()
     db_manager.eliminar_paquete_db(con, id)
     return redirect(url_for('pagina_paquetes'))
+
+@app.route('/actualizar_paquete', methods=['POST'])
+def actualizar_paquete():
+    id_paquete = request.form.get('id_paquete')
+    nombre = request.form.get('nombre_paquete')
+    precio = request.form.get('precio')
+    desc = request.form.get('descripcion')
+    
+    db_manager.update_paquete(id_paquete, nombre, precio, desc)
+    
+    return redirect('/paquetes')
+
+# =================================================================
+# --- PROVEEDORES ---
+# =================================================================
+
+@app.route('/proveedores')
+def proveedores_view():
+    lista = db_manager.obtener_proveedores()
+    print(lista) 
+    return render_template('proveedores.html', proveedores=lista)
+
+@app.route('/guardar_proveedor', methods=['POST'])
+def guardar_proveedor():
+    # Recibes todos los campos del formulario
+    nombre = request.form.get('nombre_contacto')
+    razon = request.form.get('razon_social')
+    rfc = request.form.get('rfc')
+    tel = request.form.get('telefono')
+    email = request.form.get('email')
+    
+    db_manager.insertar_proveedor(nombre, razon, rfc, tel, email)
+    return redirect('/proveedores')
+
+@app.route('/actualizar_proveedor', methods=['POST'])
+def actualizar_proveedor():
+    # 1. Recibimos todos los campos del formulario
+    id_p = request.form.get('id_proveedor')
+    empresa = request.form.get('nombre_empresa')
+    contacto = request.form.get('contacto_nombre')
+    razon = request.form.get('razon_social')
+    rfc = request.form.get('rfc')
+    tel = request.form.get('telefono')
+    email = request.form.get('email')
+    
+    # 2. Mandamos los 7 datos EXACTOS a la base de datos
+    db_manager.update_proveedor(id_p, empresa, contacto, razon, rfc, tel, email)
+    
+    return redirect('/proveedores')
+
+# ==========================================
+# RUTAS DE INSUMOS
+# ==========================================
+
+@app.route('/insumos')
+def insumos_view():
+    lista_insumos = db_manager.obtener_insumos_completos()
+    lista_proveedores = db_manager.obtener_proveedores() # Sirve para el <select>
+    return render_template('insumos.html', insumos=lista_insumos, proveedores=lista_proveedores)
+
+@app.route('/guardar_insumo', methods=['POST'])
+def guardar_insumo():
+    nombre = request.form.get('nombre_insumo')
+    costo = request.form.get('costo_unitario')
+    unidad = request.form.get('unidad_medida')
+    prov_id = request.form.get('id_proveedor')
+    
+    db_manager.insertar_insumo(nombre, costo, unidad, prov_id)
+    return redirect('/insumos')
+
+@app.route('/actualizar_insumo', methods=['POST'])
+def actualizar_insumo():
+    id_insumo = request.form.get('id_insumo')
+    nombre = request.form.get('nombre_insumo')
+    costo = request.form.get('costo_unitario')
+    unidad = request.form.get('unidad_medida')
+    prov_id = request.form.get('id_proveedor')
+    
+    db_manager.update_insumo(id_insumo, nombre, costo, unidad, prov_id)
+    return redirect('/insumos')
+
+@app.route('/eliminar_insumo/<int:id>')
+def eliminar_insumo(id):
+    db_manager.borrar_insumo(id)
+    return redirect('/insumos')
+
+@app.route('/eliminar_proveedor/<int:id>')
+def eliminar_proveedor(id):
+    db_manager.borrar_proveedor(id)
+    return redirect('/proveedores')
+
+# --- PROVEEDORES (Ajustado a tu SQL) ---
+def obtener_proveedores():
+    conexion = crear_conexion()
+    try:
+        with conexion.cursor(dictionary=True) as cursor:
+            # Usamos contacto_nombre como el nombre principal que se ve en la tabla
+            cursor.execute("SELECT * FROM proveedores")
+            return cursor.fetchall()
+    finally:
+        conexion.close()
+
+def insertar_proveedor(nombre_emp, contacto, razon, rfc, tel, email):
+    conexion = crear_conexion()
+    try:
+        with conexion.cursor() as cursor:
+            sql = """INSERT INTO proveedores (nombre_empresa, contacto_nombre, razon_social, rfc, telefono, email) 
+                     VALUES (%s, %s, %s, %s, %s, %s)"""
+            cursor.execute(sql, (nombre_emp, contacto, razon, rfc, tel, email))
+            conexion.commit()
+    finally:
+        conexion.close()
+
+# --- INSUMOS (Ajustado para el JOIN) ---
+def obtener_insumos_completos():
+    conexion = crear_conexion()
+    try:
+        with conexion.cursor(dictionary=True) as cursor:
+            # Join con proveedores usando tus nombres de columna
+            sql = """
+                SELECT i.*, p.contacto_nombre as nombre_proveedor 
+                FROM insumos i 
+                LEFT JOIN proveedores p ON i.id_proveedor = p.id_proveedor
+            """
+            cursor.execute(sql)
+            return cursor.fetchall()
+    finally:
+        conexion.close()
 
 # =================================================================
 # --- ARRANQUE ---
