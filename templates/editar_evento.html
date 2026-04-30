@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+{% block title %}Editar Venta - Elotito Regio{% endblock %}
+{% block content %}
+<style>
+    /* Quitar flechas en Chrome, Safari, Edge, Opera */
+    .no-spinners::-webkit-outer-spin-button,
+    .no-spinners::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    /* Quitar flechas en Firefox */
+    .no-spinners {
+        -moz-appearance: textfield;
+    }
+    
+    /* Asegurar que el checkbox sea naranja/amarillo como tu marca */
+    .custom-check:checked {
+        background-color: #FFA000 !important;
+        border-color: #FFA000 !important;
+    }
+</style>
+
+    <div class="d-flex flex-column align-items-center text-center mb-4 mt-4 mx-auto" style="max-width: 800px;">
+        <div class="rounded-circle d-flex justify-content-center align-items-center shadow-sm mb-3" style="width: 65px; height: 65px; background: linear-gradient(135deg, #607D8B 0%, #455A64 100%);">
+            <i class="bi bi-pencil-square fs-2 text-white"></i>
+        </div>
+        <div>
+            <h2 class="fw-bold text-dark m-0">Editar Venta #{{ evento.id_evento }}</h2>
+            <p class="text-muted mt-2">Modifica los detalles logísticos o los paquetes del evento.</p>
+        </div>
+    </div>
+
+    <div class="card border-0 shadow-sm rounded-4 mx-auto p-4 mb-5" style="max-width: 800px; background-color: #ffffff;">
+        <form action="/actualizar_evento/{{ evento.id_evento }}" method="POST" id="formEditar">
+            
+            <div class="mb-4">
+                <label class="small ms-2 fw-bold text-muted mb-1 text-uppercase">Cliente</label>
+                <select name="id_cliente" class="form-select bg-light border-0 rounded-3">
+                    {% for cliente in lista_clientes %}
+                        <option value="{{ cliente.id_cliente }}" {% if cliente.id_cliente == evento.id_cliente %}selected{% endif %}>
+                            {{ cliente.nombre_completo }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label class="small ms-2 fw-bold text-muted mb-1 text-uppercase">Fecha</label>
+                    <input type="date" name="fecha_evento" class="form-control bg-light border-0 rounded-3" value="{{ evento.fecha_evento }}" required>
+                </div>
+                <div class="col-md-6">
+                    <label class="small ms-2 fw-bold text-muted mb-1 text-uppercase">Hora</label>
+                    <input type="time" name="hora_evento" class="form-control bg-light border-0 rounded-3" value="{{ evento.hora_evento }}" required>
+                </div>
+                <div class="col-12">
+                    <label class="small ms-2 fw-bold text-muted mb-1 text-uppercase">Ubicación</label>
+                    <input type="text" name="lugar" class="form-control bg-light border-0 rounded-3" value="{{ evento.lugar }}" required>
+                </div>
+            </div>
+
+            <div class="mb-4 p-3 bg-light rounded-4">
+                <label class="fw-bold text-muted mb-3 small text-uppercase d-block">Paquetes Seleccionados</label>
+                <div class="row g-2">
+                    {% for paquete in lista_paquetes %}
+                        {% set p_data = namespace(checked=false, cantidad=0) %}
+                        {% for p_sel in evento.paquetes_seleccionados %}
+                            {% if p_sel.id_paquete == paquete.id_paquete %}
+                                {% set p_data.checked = true %}
+                                {% set p_data.cantidad = p_sel.cantidad %}
+                            {% endif %}
+                        {% endfor %}
+
+                        <div class="col-md-6">
+                        <div class="p-3 bg-white rounded-3 border d-flex align-items-center justify-content-between shadow-sm">
+                            <div class="form-check m-0">
+                                <input class="form-check-input custom-check" type="checkbox" name="paquetes_seleccionados" 
+                                    value="{{ paquete.id_paquete }}" id="p{{ paquete.id_paquete }}" 
+                                    {% if p_data.checked %}checked{% endif %}>
+                                <label class="form-check-label small fw-bold text-dark" for="p{{ paquete.id_paquete }}">
+                                    {{ paquete.nombre_paquete }}
+                                </label>
+                            </div>
+                            <div class="d-flex align-items-center bg-light rounded-pill px-3 border" style="min-width: 100px;">
+                            <span class="text-muted small fw-bold me-2">Cant:</span>
+                            <input type="number" 
+                                name="cantidad_{{ paquete.id_paquete }}" 
+                                class="form-control form-control-sm border-0 bg-transparent fw-bold p-0 no-spinners" 
+                                style="width: 40px; color: #333 !important; font-size: 1rem; outline: none; box-shadow: none;" 
+                                value="{{ p_data.cantidad }}" 
+                                min="0">
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="d-flex justify-content-center gap-3 mt-4">
+                <a href="/eventos_lista" class="btn btn-light rounded-pill px-4 fw-bold text-muted border">Cancelar</a>
+                <button type="submit" class="btn btn-warning rounded-pill px-5 fw-bold text-dark shadow-sm">
+                    Guardar Cambios
+                </button>
+            </div>
+        </form>
+    </div>
+
+{% endblock %}

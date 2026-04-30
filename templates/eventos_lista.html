@@ -1,56 +1,238 @@
 {% extends "base.html" %}
 {% block title %}Historial de Eventos - Elotito Regio{% endblock %}
 {% block content %}
-<h1 class="main-title">Historial de Eventos</h1>
-<div class="card-custom shadow-sm p-4" style="max-width: 1100px;">
-    <div class="table-responsive">
-        <table class="table table-hover align-middle border-0">
-            <thead class="table-light">
-                <tr>
-                    <th class="border-0 rounded-start">ID</th>
-                    <th class="border-0">Fecha / Lugar</th>
-                    <th class="border-0">Cliente</th>
-                    <th class="border-0">Total</th>
-                    <th class="border-0">Adelanto</th>
-                    <th class="border-0">Adeudo</th>
-                    <th class="border-0 text-center">Estado</th>
-                    <th class="border-0 text-center rounded-end">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for evento in lista_eventos %}
-                    {% set adeudo = evento.total - evento.adelanto %}
-                    <tr>
-                        <td class="fw-bold text-muted border-0 border-bottom">#{{ evento.id }}</td>
-                        <td class="border-0 border-bottom">
-                            <span class="fw-bold">{{ evento.fecha }}</span><br>
-                            <small class="text-muted">{{ evento.lugar }}</small>
-                        </td>
-                        <td class="fw-bold border-0 border-bottom">{{ evento.cliente }}</td>
-                        <td class="border-0 border-bottom text-dark fw-bold">${{ "%.2f"|format(evento.total) }}</td>
-                        <td class="border-0 border-bottom text-success">
-                            ${{ "%.2f"|format(evento.adelanto) }}<br>
-                            <small class="text-muted" style="font-size: 0.75rem;">{{ evento.metodo_pago }}</small>
-                        </td>
-                        <td class="border-0 border-bottom fw-bold text-danger">${{ "%.2f"|format(adeudo) }}</td>
-                        <td class="border-0 border-bottom text-center">
-                            {% if adeudo <= 0 %}
-                                <span class="badge bg-success rounded-pill px-3 py-2 shadow-sm">Pagado</span>
-                            {% else %}
-                                <span class="badge bg-warning text-dark rounded-pill px-3 py-2 shadow-sm">Pendiente</span>
-                            {% endif %}
-                        </td>
-                        <td class="border-0 border-bottom text-center">
-                            <a href="/eliminar_evento/{{ evento.id }}" class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="return confirm('¿Estás super seguro de eliminar esta venta/evento por completo?');">
-                                Eliminar
-                            </a>
-                        </td>
-                    </tr>
-                {% else %}
-                    <tr><td colspan="8" class="text-center text-muted py-5 border-0">No hay ventas registradas aún.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+
+    <div class="d-flex flex-column align-items-center text-center mb-4 mt-4 mx-auto" style="max-width: 800px;">
+        <div class="rounded-circle d-flex justify-content-center align-items-center shadow-sm mb-3" style="width: 65px; height: 65px; background: linear-gradient(135deg, #FFC107 0%, #FFA000 100%);">
+            <i class="bi bi-calendar2-check-fill fs-2 text-white"></i>
+        </div>
+        <div>
+            <h2 class="fw-bold text-dark m-0" style="font-family: 'Montserrat', sans-serif;">Historial de Eventos</h2>
+            <p class="text-muted mt-2">Consulta ventas pasadas, gestiona cobros pendientes y busca registros.</p>
+        </div>
     </div>
-</div>
+
+    <div class="card border-0 shadow-sm rounded-4 mx-auto p-4 mb-5" style="max-width: 1100px; background-color: #ffffff;">
+        
+        <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+            <h5 class="fw-bold text-muted text-uppercase small m-0">Registro Operativo</h5>
+            
+            <form action="/eventos_lista" method="GET" class="d-flex" style="width: 100%; max-width: 350px;">
+                <div class="input-group shadow-sm" style="border-radius: 50px; overflow: hidden; border: 1px solid #eee;">
+                    <input type="text" name="q" class="form-control border-0 bg-light px-4" placeholder="Buscar cliente, lugar o fecha..." value="{{ busqueda_actual }}" style="box-shadow: none;">
+                    {% if busqueda_actual %}
+                        <a href="/eventos_lista" class="btn btn-light bg-light border-0 text-danger" title="Limpiar búsqueda"><i class="bi bi-x-circle-fill"></i></a>
+                    {% endif %}
+                    <button type="submit" class="btn btn-light bg-light border-0 text-primary"><i class="bi bi-search"></i></button>
+                </div>
+            </form>
+        </div>
+
+        <div class="table-responsive border-0">
+            <table class="table table-borderless table-hover align-middle">
+                <thead style="border-bottom: 2px solid #eee; color: #a0a0a0; font-size: 0.85rem; text-transform: uppercase;">
+                    <tr>
+                        <th class="fw-bold py-3">ID</th>
+                        <th class="fw-bold py-3">Fecha / Lugar</th>
+                        <th class="fw-bold py-3">Cliente</th>
+                        <th class="fw-bold py-3">Finanzas</th>
+                        <th class="fw-bold py-3 text-center">Estado</th>
+                        <th class="fw-bold py-3 text-end">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for evento in lista_eventos %}
+                        {% set adeudo = evento.total - evento.adelanto %}
+                        <tr style="border-bottom: 1px solid #f8f9fa;">
+                            <td class="text-muted fw-bold py-3">#{{ evento.id }}</td>
+                            <td class="py-3">
+                                <span class="fw-bold text-dark"><i class="bi bi-calendar-event me-2 text-warning opacity-75"></i>{{ evento.fecha }}</span><br>
+                                <small class="text-muted"><i class="bi bi-geo-alt-fill me-2 text-danger opacity-75"></i>{{ evento.lugar }}</small>
+                            </td>
+                            <td class="fw-bold text-dark py-3">{{ evento.cliente }}</td>
+                            
+                            <td class="py-3">
+                                <div class="small text-muted mb-1">Total: <span class="fw-bold text-dark">${{ "%.2f"|format(evento.total) }}</span></div>
+                                <div class="small text-success mb-1">Caja: ${{ "%.2f"|format(evento.adelanto) }} <span class="opacity-50">({{ evento.metodo_pago }})</span></div>
+                                <div class="small text-danger fw-bold">Resta: ${{ "%.2f"|format(adeudo) }}</div>
+                            </td>
+                            
+                            <td class="py-3 text-center">
+                                {% if adeudo <= 0 %}
+                                    <span class="badge bg-success-subtle text-success rounded-pill px-3 py-2 shadow-sm">Liquidado</span>
+                                {% else %}
+                                    <span class="badge bg-warning-subtle text-warning-emphasis rounded-pill px-3 py-2 shadow-sm">Pendiente</span>
+                                {% endif %}
+                            </td>
+                            
+                            <td class="py-3 text-end" style="white-space: nowrap;">
+                                <button class="btn btn-sm btn-outline-success rounded-pill px-2 shadow-sm me-1" 
+                                onclick="registrarAbono(event, {{ evento.id }}, {{ adeudo }})" 
+                                title="Abonar/Liquidar">
+                                <i class="bi bi-cash-coin"></i>
+                                </button>
+                                
+                                <a href="/editar_evento/{{ evento.id }}" 
+                                class="btn btn-sm btn-outline-primary rounded-pill px-2 shadow-sm me-1" 
+                                title="Editar">
+                                    <i class="bi bi-pencil"></i>
+                                </a>
+                                
+                                <button class="btn btn-sm btn-outline-danger rounded-pill px-2 shadow-sm" 
+                                onclick="confirmarEliminarEvento(event, {{ evento.id }}, '{{ evento.cliente }}')" 
+                                title="Eliminar">
+                                <i class="bi bi-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">
+                                <i class="bi bi-search fs-1 d-block mb-2 opacity-25"></i>
+                                {% if busqueda_actual %} No se encontraron eventos con "{{ busqueda_actual }}".
+                                {% else %} No hay ventas registradas aún en el sistema. {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+<script>
+function registrarAbono(event, idEvento, adeudoActual) {
+    event.preventDefault();
+    
+    if(adeudoActual <= 0) {
+        Swal.fire({
+            title: 'Evento Liquidado',
+            text: 'No hay saldos pendientes.',
+            icon: 'info',
+            confirmButtonColor: '#FFA000', // Amarillo institucional
+            borderRadius: '15px'
+        });
+        return;
+    }
+
+    Swal.fire({
+        title: 'Registrar Pago',
+        html: `
+            <p class="text-muted mb-3 fs-6">Adeudo actual: 
+               <b class="text-dark">$${adeudoActual.toFixed(2)}</b>
+            </p>
+        `,
+        input: 'number',
+        inputPlaceholder: '$0.00',
+        showCancelButton: true,
+        confirmButtonText: 'Guardar', // Texto más corto
+        cancelButtonText: 'Cancelar',
+        
+        // Estilos para que combine con Elotito Regio (Adiós verde pesado)
+        confirmButtonColor: '#FFA000', // Amarillo principal
+        cancelButtonColor: '#f8f9fa', // Gris muy tenue
+        
+        customClass: {
+            popup: 'rounded-4 shadow-sm border-0', // Redondeado más suave
+            title: 'fw-bold text-dark fs-4 mb-2',
+            input: 'custom-swal-input-slim', // Clase nueva para el input
+            confirmButton: 'btn btn-warning btn-md rounded-pill px-4 fw-bold shadow-sm', // Botón más pequeño
+            cancelButton: 'btn btn-light btn-md rounded-pill px-4 fw-bold text-muted border ms-2'
+        },
+
+        // Estilización súper fina del input con CSS inyectado
+        didOpen: () => {
+            const input = Swal.getInput();
+            // Quitamos todo lo tosco: sombra, bordes gruesos y padding exagerado
+            input.style.boxShadow = 'none';
+            input.style.transition = 'all 0.2s';
+            input.style.border = '0'; // Sin borde inicial
+            input.style.borderBottom = '2px solid #eee'; // Solo una línea abajo
+            input.style.borderRadius = '0'; // Sin esquinas redondeadas en el input
+            input.style.padding = '10px 5px'; // Padding mínimo
+            input.style.fontSize = '1.2rem'; // Fuente más normal
+            input.style.fontWeight = 'normal';
+            input.style.color = '#333';
+            input.style.maxWidth = '200px'; // Input más angosto
+
+            // Estilos para quitar las flechitas (spinners) y efecto de foco
+            const style = document.createElement('style');
+            style.innerHTML = `
+                .custom-swal-input-slim::-webkit-inner-spin-button, 
+                .custom-swal-input-slim::-webkit-outer-spin-button { 
+                    -webkit-appearance: none; 
+                    margin: 0; 
+                }
+                .custom-swal-input-slim:focus {
+                    border-bottom-color: #FFA000 !important; // Línea amarilla al escribir
+                    background-color: transparent !important; // Sin fondo de color
+                }
+            `;
+            document.head.appendChild(style);
+        },
+
+        inputAttributes: {
+            min: 0.1,
+            max: adeudoActual,
+            step: 0.01
+        }
+    }).then((result) => {
+        if (result.isConfirmed && result.value) {
+            window.location.href = "/abonar_pago/" + idEvento + "/" + result.value;
+        }
+    });
+}
+
+function confirmarEliminarEvento(event, idEvento, cliente) {
+    event.preventDefault();
+    
+    Swal.fire({
+        title: '¿Anular Venta?',
+        html: `<p class="text-muted">Estás por eliminar el registro de <br><b class="text-dark">${cliente}</b></p>`,
+        icon: 'warning',
+        iconColor: '#dc3545',
+        showCancelButton: true,
+        confirmButtonText: 'Eliminar',
+        cancelButtonText: 'Cancelar',
+        confirmButtonColor: '#dc3545', // Rojo sutil para peligro
+        cancelButtonColor: '#f8f9fa',
+        reverseButtons: true,
+        customClass: {
+            popup: 'rounded-4 shadow-sm border-0',
+            title: 'fw-bold text-dark fs-4',
+            confirmButton: 'btn btn-danger btn-md rounded-pill px-4 fw-bold shadow-sm',
+            cancelButton: 'btn btn-light btn-md rounded-pill px-4 fw-bold text-muted border ms-2'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = "/eliminar_evento/" + idEvento;
+        }
+    });
+}
+
+// Agrega esto en tu scripts de eventos_lista.html
+function eliminarEvento(id) {
+    Swal.fire({
+        title: '¿Eliminar registro?',
+        text: "Esta acción no se puede deshacer",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545', // Rojo para peligro
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Sí, borrar',
+        cancelButtonText: 'Cancelar',
+        customClass: {
+            popup: 'rounded-4 shadow-sm',
+            confirmButton: 'rounded-pill px-4',
+            cancelButton: 'rounded-pill px-4'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.location.href = "/eliminar_evento/" + id;
+        }
+    })
+}
+</script>
+
 {% endblock %}

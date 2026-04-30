@@ -1,74 +1,100 @@
 {% extends "base.html" %}
-{% block title %}Paquetes - Elotito Regio{% endblock %}
 {% block content %}
-<h1 class="main-title">Administrar Paquetes</h1>
 
-<div class="card-custom shadow-sm mb-5">
-    <h5 class="mb-4 fw-bold text-muted text-uppercase">
-        {% if paquete_editar %}
-            <span class="text-primary">Editar Paquete #{{ paquete_editar.id_paquete }}</span>
-        {% else %}
-            Registrar Nuevo Paquete
-        {% endif %}
-    </h5>
-    
-    <form action="{% if paquete_editar %}/editar_paquete/{{ paquete_editar.id_paquete }}{% else %}/guardar_paquete{% endif %}" method="POST">
-        <div class="row g-3 mb-4">
+<div class="d-flex flex-column align-items-center text-center mb-4 mt-4 mx-auto" style="max-width: 800px;">
+    <div class="rounded-circle d-flex justify-content-center align-items-center shadow-sm mb-3" style="width: 65px; height: 65px; background: linear-gradient(135deg, #FF9800 0%, #F57C00 100%);">
+        <i class="bi bi-box-seam-fill fs-2 text-white"></i>
+    </div>
+    <div>
+        <h2 class="fw-bold text-dark m-0">Administrar Paquetes</h2>
+        <p class="text-muted mt-2">Configura tus productos y calcula el precio en base a insumos.</p>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 mx-auto p-4 mb-5" style="max-width: 900px;">
+    <form action="/guardar_paquete" method="POST" id="formPaquetes">
+        <div class="row g-3">
             <div class="col-md-8">
-                <label class="small ms-3 fw-bold text-muted mb-1">Nombre del Paquete *</label>
-                <input type="text" name="nombre_paquete" class="form-control" required placeholder="Ej. Paquete Básico 50" value="{{ paquete_editar.nombre_paquete if paquete_editar else '' }}">
+                <label class="small fw-bold text-muted mb-1 text-uppercase">Nombre del Paquete</label>
+                <input type="text" name="nombre_paquete" class="form-control rounded-3 border-light-subtle bg-light" required placeholder="Ej. Paquete Básico 50">
             </div>
             <div class="col-md-4">
-                <label class="small ms-3 fw-bold text-muted mb-1">Precio ($) *</label>
-                <input type="number" step="0.01" name="precio" class="form-control" required placeholder="0.00" value="{{ paquete_editar.precio if paquete_editar else '' }}">
+                <label class="small fw-bold text-muted mb-1 text-uppercase">Precio Sugerido ($)</label>
+                <input type="number" id="precio_total" name="precio" class="form-control rounded-3 border-warning fw-bold text-dark bg-white" readonly>
+                <small class="text-muted" style="font-size: 0.7rem;">Autocalculado por insumos</small>
             </div>
+            
             <div class="col-12">
-                <label class="small ms-3 fw-bold text-muted mb-1">Descripción de lo que incluye</label>
-                <textarea name="descripcion" class="form-control" style="border-radius: 20px; padding: 1rem;" rows="3" placeholder="Ej. Incluye 50 elotes enteros...">{{ paquete_editar.descripcion if paquete_editar else '' }}</textarea>
+                <label class="small fw-bold text-muted mb-1 text-uppercase">Insumos Requeridos</label>
+                <div id="contenedor-insumos">
+                    <div class="row g-2 mb-2 insumo-fila align-items-end">
+                        <div class="col-6">
+                            <label class="small fw-bold text-muted opacity-75">Insumo</label>
+                           <select class="form-select select-insumo" name="insumos[]" onchange="calcularCosto()">
+                            <option value="0" data-costo="0">-- Seleccionar --</option>
+                            
+                            {% for insumo in lista_insumos %}
+                            <option value="{{ insumo.id_insumo }}" data-costo="{{ insumo.costo_unitario }}">
+                                {{ insumo.nombre_insumo }} (${{ insumo.costo_unitario }})
+                            </option>
+                            {% endfor %}
+                            
+                        </select>
+                        </div>
+                        <div class="col-4">
+                            <label class="small fw-bold text-muted opacity-75">Cantidad</label>
+                            <input type="number" step="0.1" class="form-control cant-insumo rounded-3" name="cantidades[]" placeholder="0.0" oninput="calcularCosto()">
+                        </div>
+                        <div class="col-2">
+                            <button type="button" class="btn btn-outline-danger border-0" onclick="eliminarFila(this)"><i class="bi bi-x-circle-fill"></i></button>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="btn btn-sm btn-dark mt-2 rounded-pill" onclick="agregarInsumo()">+ Agregar Insumo</button>
             </div>
         </div>
-        
-        <div class="text-center mt-4">
-            {% if paquete_editar %}
-                <a href="/paquetes" class="btn btn-outline-secondary btn-lg shadow-sm rounded-pill px-4 me-2">Cancelar</a>
-            {% endif %}
-            <button type="submit" class="btn btn-custom-success btn-lg shadow rounded-pill px-5">
-                {% if paquete_editar %}Actualizar Paquete{% else %}Guardar Paquete{% endif %}
-            </button>
+
+        <div class="text-center mt-5">
+            <button type="submit" class="btn btn-warning rounded-pill px-5 fw-bold shadow-sm">Guardar Paquete</button>
         </div>
     </form>
 </div>
 
-<div class="card-custom shadow-sm p-4">
-    <h5 class="mb-4 fw-bold text-muted text-uppercase">Paquetes Existentes</h5>
-    <div class="table-responsive">
-        <table class="table table-hover align-middle border-0">
-            <thead class="table-light">
-                <tr>
-                    <th class="border-0 rounded-start">ID</th>
-                    <th class="border-0">Nombre</th>
-                    <th class="border-0">Descripción</th>
-                    <th class="border-0">Precio</th>
-                    <th class="border-0 text-center rounded-end">Acciones</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for paquete in lista_paquetes %}
-                <tr>
-                    <td class="fw-bold text-muted border-0 border-bottom">#{{ paquete.id_paquete }}</td>
-                    <td class="fw-bold border-0 border-bottom">{{ paquete.nombre_paquete }}</td>
-                    <td class="text-muted small border-0 border-bottom">{{ paquete.descripcion }}</td>
-                    <td class="text-success fw-bold border-0 border-bottom">${{ "%.2f"|format(paquete.precio) }}</td>
-                    <td class="border-0 border-bottom text-center" style="white-space: nowrap;">
-                        <a href="/editar_paquete/{{ paquete.id_paquete }}" class="btn btn-sm btn-outline-primary rounded-pill px-3">Editar</a>
-                        <a href="/eliminar_paquete/{{ paquete.id_paquete }}" class="btn btn-sm btn-outline-danger rounded-pill px-3" onclick="return confirm('¿Seguro que deseas eliminar este paquete?');">Eliminar</a>
-                    </td>
-                </tr>
-                {% else %}
-                <tr><td colspan="5" class="text-center text-muted py-4 border-0">Aún no hay paquetes registrados.</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
-</div>
+<script>
+function agregarInsumo() {
+    const contenedor = document.getElementById('contenedor-insumos');
+    const nuevaFila = contenedor.querySelector('.insumo-fila').cloneNode(true);
+    nuevaFila.querySelector('input').value = "";
+    contenedor.appendChild(nuevaFila);
+}
+
+function eliminarFila(btn) {
+    const filas = document.querySelectorAll('.insumo-fila');
+    if(filas.length > 1) btn.closest('.insumo-fila').remove();
+    calcularCosto();
+}
+
+function calcularCosto() {
+    let costoTotalProduccion = 0;
+    const filas = document.querySelectorAll('.insumo-fila');
+    
+    filas.forEach(fila => {
+        const select = fila.querySelector('.select-insumo');
+        const costoUnitario = parseFloat(select.options[select.selectedIndex].dataset.costo) || 0;
+        const cantidad = parseFloat(fila.querySelector('.cant-insumo').value) || 0;
+        
+        costoTotalProduccion += (costoUnitario * cantidad);
+    });
+
+    // Supongamos que quieres ganar el doble (margen del 100% sobre costo)
+    // O puedes dejarlo igual al costo y tú le subes manualmente.
+    let margenGanancia = 1.6; // Multiplicar por 1.6 para ganar el 60%
+    let sugerido = costoTotalProduccion * margenGanancia;
+
+    document.getElementById('precio_total').value = sugerido.toFixed(2);
+    
+    // Mostramos un pequeño texto con el costo real para que el admin sepa cuánto gasta
+    document.getElementById('info-costo').innerHTML = `Costo Real: $${costoTotalProduccion.toFixed(2)}`;
+}
+</script>
 {% endblock %}

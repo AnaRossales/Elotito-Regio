@@ -34,12 +34,25 @@ def agregar_cliente_db(conexion, cliente):
     finally:
         if cursor: cursor.close()
 
-def get_clientes_db(conexion):
+def get_clientes_db(conexion, busqueda=None):
     clientes = []
     cursor = None
     try:
         cursor = conexion.cursor()
-        cursor.execute("SELECT id_cliente, nombre, apellido_paterno, apellido_materno, telefono, email FROM Clientes")
+        
+        # Si el usuario escribió algo en el buscador:
+        if busqueda:
+            sql = """
+            SELECT id_cliente, nombre, apellido_paterno, apellido_materno, telefono, email 
+            FROM clientes 
+            WHERE nombre LIKE %s OR apellido_paterno LIKE %s OR telefono LIKE %s OR email LIKE %s
+            """
+            filtro = f"%{busqueda}%"
+            cursor.execute(sql, (filtro, filtro, filtro, filtro))
+        else:
+            # Si no hay búsqueda, traemos todos
+            cursor.execute("SELECT id_cliente, nombre, apellido_paterno, apellido_materno, telefono, email FROM clientes")
+            
         for fila in cursor.fetchall():
             clientes.append(Cliente(id_cliente=fila[0], nombre=fila[1], apellido_paterno=fila[2], apellido_materno=fila[3], telefono=fila[4], email=fila[5]))
     except Error as e:
@@ -113,7 +126,7 @@ def agregar_evento_db(conexion, evento):
     finally:
         if cursor: cursor.close()
 
-def get_eventos_db(conexion):
+def get_eventos_db(conexion, busqueda=None):
     eventos = []
     cursor = None
     try:
@@ -121,19 +134,61 @@ def get_eventos_db(conexion):
         sql = """
         SELECT e.id_evento, e.fecha_evento, e.lugar, CONCAT(c.nombre, ' ', c.apellido_paterno) as cliente,
                IFNULL(m.nombre_metodo, 'N/A') as metodo_pago, e.adelanto, IFNULL(SUM(ep.cantidad * p.precio), 0) as total_evento
-        FROM Eventos e
-        JOIN Clientes c ON e.id_cliente = c.id_cliente
-        LEFT JOIN Metodos_Pago m ON e.id_metodo_pago = m.id_metodo
-        LEFT JOIN Evento_Paquete ep ON e.id_evento = ep.id_evento
-        LEFT JOIN Paquetes p ON ep.id_paquete = p.id_paquete
-        GROUP BY e.id_evento ORDER BY e.fecha_evento DESC
+        FROM eventos e
+        JOIN clientes c ON e.id_cliente = c.id_cliente
+        LEFT JOIN metodos_pago m ON e.id_metodo_pago = m.id_metodo
+        LEFT JOIN evento_paquete ep ON e.id_evento = ep.id_evento
+        LEFT JOIN paquetes p ON ep.id_paquete = p.id_paquete
         """
-        cursor.execute(sql)
+        
+        # Si hay búsqueda, filtramos por cliente, lugar o fecha
+        if busqueda:
+            sql += " WHERE CONCAT(c.nombre, ' ', c.apellido_paterno) LIKE %s OR e.lugar LIKE %s OR e.fecha_evento LIKE %s "
+            
+        sql += " GROUP BY e.id_evento ORDER BY e.fecha_evento DESC "
+        
+        if busqueda:
+            filtro = f"%{busqueda}%"
+            cursor.execute(sql, (filtro, filtro, filtro))
+        else:
+            cursor.execute(sql)
+            
         for f in cursor.fetchall():
-            eventos.append({"id": f[0], "fecha": f[1], "lugar": f[2], "cliente": f[3], "metodo_pago": f[4], "adelanto": f[5], "total": f[6]})
+            fecha_formateada = f[1].strftime('%d/%m/%Y') if hasattr(f[1], 'strftime') else f[1]
+            eventos.append({"id": f[0], "fecha": fecha_formateada, "lugar": f[2], "cliente": f[3], "metodo_pago": f[4], "adelanto": f[5], "total": f[6]})
     finally:
         if cursor: cursor.close()
     return eventos
+
+# ¡NUEVA FUNCIÓN! Busca el evento más cercano a la fecha de hoy
+def get_proximo_evento(conexion):
+    cursor = None
+    try:
+        cursor = conexion.cursor()
+        sql = """
+        SELECT e.id_evento, e.fecha_evento, e.hora_evento, e.lugar, CONCAT(c.nombre, ' ', c.apellido_paterno) as cliente
+        FROM eventos e
+        JOIN clientes c ON e.id_cliente = c.id_cliente
+        WHERE e.fecha_evento >= CURDATE()
+        ORDER BY e.fecha_evento ASC, e.hora_evento ASC
+        LIMIT 1
+        """
+        cursor.execute(sql)
+        f = cursor.fetchone()
+        if f:
+            return {
+                "id": f[0], 
+                "fecha": f[1].strftime('%d/%m/%Y') if hasattr(f[1], 'strftime') else f[1],
+                "hora": str(f[2])[:5], # Toma solo HH:MM
+                "lugar": f[3],
+                "cliente": f[4]
+            }
+        return None
+    except Exception as e:
+        print(f"Error al obtener próximo evento: {e}")
+        return None
+    finally:
+        if cursor: cursor.close()
 
 # --- Dashboard ---
 def get_dashboard_stats(conexion):
@@ -226,3 +281,128 @@ def actualizar_cliente_db(conexion, cliente):
     finally:
         cursor.close()
 
+def get_usuario_por_nombre(conexion, nombre_usuario):
+    cursor = None
+    try:
+        # Usamos dictionary=True para que devuelva un diccionario fácil de leer en app_web.py
+        cursor = conexion.cursor(dictionary=True)
+        cursor.execute("SELECT * FROM usuarios WHERE nombre_usuario = %s", (nombre_usuario,))
+        usuario = cursor.fetchone()
+        return usuario
+    except Error as e:
+        print(f"Error al consultar usuario: {e}")
+        return None
+    finally:
+        if cursor: 
+            cursor.close()
+def get_dashboard_stats(conexion):
+
+    stats = {"total_clientes": 0, "total_eventos": 0, "ingresos_totales": 0.0, "adelantos_totales": 0.0}
+    cursor = None
+    try:
+        cursor = conexion.cursor()
+        cursor.execute("SELECT COUNT(*) FROM clientes")
+        stats["total_clientes"] = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT COUNT(*) FROM eventos")
+        stats["total_eventos"] = cursor.fetchone()[0]
+        
+        cursor.execute("SELECT IFNULL(SUM(ep.cantidad * p.precio), 0) FROM evento_paquete ep JOIN paquetes p ON ep.id_paquete = p.id_paquete")
+        stats["ingresos_totales"] = float(cursor.fetchone()[0])
+        
+        cursor.execute("SELECT IFNULL(SUM(adelanto), 0) FROM eventos")
+        stats["adelantos_totales"] = float(cursor.fetchone()[0])
+        
+    finally:
+        if cursor: cursor.close()
+    return stats
+
+def abonar_evento_db(conexion, id_evento, monto):
+    cursor = None
+    try:
+        cursor = conexion.cursor()
+        # Sumamos el monto recibido al valor actual del adelanto
+        sql = "UPDATE eventos SET adelanto = adelanto + %s WHERE id_evento = %s"
+        cursor.execute(sql, (monto, id_evento))
+        conexion.commit()
+        return True
+    except Exception as e:
+        print(f"Error al registrar abono: {e}")
+        return False
+    finally:
+        if cursor: cursor.close()
+
+def get_evento_por_id(conexion, id_evento):
+    cursor = conexion.cursor(dictionary=True)
+    try:
+        query = "SELECT * FROM eventos WHERE id_evento = %s"
+        cursor.execute(query, (id_evento,))
+        evento = cursor.fetchone()
+        
+        if evento:
+            query_paquetes = """
+                SELECT id_paquete, cantidad 
+                FROM evento_paquete 
+                WHERE id_evento = %s
+            """
+            cursor.execute(query_paquetes, (id_evento,))
+            evento['paquetes_seleccionados'] = cursor.fetchall()
+            
+        return evento
+    except Exception as e:
+        print(f"Error en get_evento_por_id: {e}")
+        return None
+    finally:
+        if cursor: cursor.close()
+
+def actualizar_evento_completo_db(conexion, id_evento, datos, paquetes):
+    cursor = conexion.cursor()
+    try:
+        # 1. Actualizar datos básicos
+        sql_base = "UPDATE eventos SET id_cliente=%s, fecha_evento=%s, hora_evento=%s, lugar=%s WHERE id_evento=%s"
+        cursor.execute(sql_base, (datos['id_cliente'], datos['fecha'], datos['hora'], datos['lugar'], id_evento))
+        
+        # 2. Borrar paquetes anteriores para no duplicar
+        cursor.execute("DELETE FROM evento_paquete WHERE id_evento = %s", (id_evento,))
+        
+        # 3. Insertar los nuevos seleccionados
+        sql_p = "INSERT INTO evento_paquete (id_evento, id_paquete, cantidad) VALUES (%s, %s, %s)"
+        for id_p, cant in paquetes:
+            if cant > 0:
+                cursor.execute(sql_p, (id_evento, id_p, cant))
+        
+        conexion.commit()
+    finally:
+        cursor.close()        
+
+def get_insumos_db(conexion):
+    cursor = conexion.cursor(dictionary=True)
+    # Seleccionamos los nombres exactos de tu script SQL
+    query = "SELECT id_insumo, nombre_insumo, costo_unitario, unidad_medida FROM insumos"
+    cursor.execute(query)
+    insumos = cursor.fetchall()
+    cursor.close()
+    return insumos
+
+def guardar_paquete_con_insumos(conexion, nombre, descripcion, precio, insumos_seleccionados):
+    cursor = conexion.cursor()
+    try:
+        # 1. Insertar el paquete
+        sql_paquete = "INSERT INTO paquetes (nombre_paquete, descripcion, precio) VALUES (%s, %s, %s)"
+        cursor.execute(sql_paquete, (nombre, descripcion, precio))
+        id_nuevo_paquete = cursor.lastrowid
+
+        # 2. Insertar la relación de insumos (la tabla pivote que creaste)
+        sql_pivote = "INSERT INTO paquete_insumo (id_paquete, id_insumo, cantidad_necesaria) VALUES (%s, %s, %s)"
+        for item in insumos_seleccionados:
+            # item es una tupla (id_insumo, cantidad)
+            cursor.execute(sql_pivote, (id_nuevo_paquete, item[0], item[1]))
+        
+        conexion.commit()
+        return True
+    except Exception as e:
+        print(f"Error al guardar paquete e insumos: {e}")
+        conexion.rollback()
+        return False
+    finally:
+        cursor.close()
