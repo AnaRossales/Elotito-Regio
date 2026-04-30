@@ -1,8 +1,9 @@
 class Evento:
-    def __init__(self, id_cliente, fecha_evento, hora_evento, lugar, 
+    def __init__(self, id_cliente, id_usuario, fecha_evento, hora_evento, lugar, 
                  adelanto=0.0, id_metodo_pago=None, id_evento=None):
         self.id_evento = id_evento
         self.id_cliente = id_cliente
+        self.id_usuario = id_usuario  # ¡NUEVO CAMPO!
         self.fecha_evento = fecha_evento
         self.hora_evento = hora_evento
         self.lugar = lugar

@@ -95,8 +95,9 @@ def agregar_evento_db(conexion, evento):
     cursor = None
     try:
         cursor = conexion.cursor()
-        sql_evento = "INSERT INTO Eventos (id_cliente, fecha_evento, hora_evento, lugar, adelanto, id_metodo_pago) VALUES (%s, %s, %s, %s, %s, %s)"
-        valores_evento = (evento.id_cliente, evento.fecha_evento, evento.hora_evento, evento.lugar, evento.adelanto, evento.id_metodo_pago)
+        # MODIFICADO: Agregamos id_usuario
+        sql_evento = "INSERT INTO Eventos (id_cliente, id_usuario, fecha_evento, hora_evento, lugar, adelanto, id_metodo_pago) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+        valores_evento = (evento.id_cliente, evento.id_usuario, evento.fecha_evento, evento.hora_evento, evento.lugar, evento.adelanto, evento.id_metodo_pago)
         cursor.execute(sql_evento, valores_evento)
         id_evento_nuevo = cursor.lastrowid
         
@@ -224,3 +225,4 @@ def actualizar_cliente_db(conexion, cliente):
         print(f"Error al actualizar cliente: {e}")
     finally:
         cursor.close()
+
