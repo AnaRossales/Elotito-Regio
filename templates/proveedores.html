@@ -113,12 +113,10 @@
 </div>
 
 <style>
-    /* Diseño de Píldora para unificar el estilo con Insumos */
     .input-pildora {
         border-radius: 50rem !important;
     }
 
-    /* Botones de Acción en la Tabla */
     .action-btn { width: 35px; height: 35px; display: flex; align-items: center; justify-content: center; border: none; background: transparent; border-radius: 8px; color: #adb5bd; transition: all 0.2s; font-size: 1.1rem; }
     .action-btn.edit:hover { background-color: #fff9db; color: #fab005; }
     .action-btn.delete:hover { background-color: #fff5f5; color: #fa5252; }
@@ -126,7 +124,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    // --- LÓGICA DE EDICIÓN ---
     function cargarEdicion(id, empresa, contacto, razon, rfc, tel, email) {
         document.getElementById('id_proveedor_edit').value = id;
         document.querySelector('input[name="nombre_empresa"]').value = empresa !== 'None' ? empresa : '';
@@ -144,7 +141,6 @@
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    // --- LIMPIAR FORMULARIO ---
     function limpiarFormulario() {
         document.getElementById('formProveedores').reset();
         document.getElementById('id_proveedor_edit').value = "";
@@ -155,7 +151,6 @@
         document.getElementById('formProveedores').action = "/guardar_proveedor";
     }
 
-    // --- ALERTA DE BORRADO ---
     function confirmarBorrarProveedor(id, nombre) {
         Swal.fire({
             title: '¿Eliminar proveedor?',
@@ -172,7 +167,6 @@
         });
     }
 
-    // --- BUSCADOR EN TIEMPO REAL ---
     function filtrarTabla() {
         let input = document.getElementById("buscadorProveedores").value.toLowerCase();
         let filas = document.querySelectorAll(".fila-proveedor");

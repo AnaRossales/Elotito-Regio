@@ -110,7 +110,7 @@ function registrarAbono(event, idEvento, adeudoActual) {
             title: 'Evento Liquidado',
             text: 'No hay saldos pendientes.',
             icon: 'info',
-            confirmButtonColor: '#FFA000', // Amarillo institucional
+            confirmButtonColor: '#FFA000', 
             borderRadius: '15px'
         });
         return;
@@ -126,37 +126,34 @@ function registrarAbono(event, idEvento, adeudoActual) {
         input: 'number',
         inputPlaceholder: '$0.00',
         showCancelButton: true,
-        confirmButtonText: 'Guardar', // Texto más corto
+        confirmButtonText: 'Guardar', 
         cancelButtonText: 'Cancelar',
         
-        // Estilos para que combine con Elotito Regio (Adiós verde pesado)
-        confirmButtonColor: '#FFA000', // Amarillo principal
-        cancelButtonColor: '#f8f9fa', // Gris muy tenue
+        confirmButtonColor: '#FFA000', 
+        cancelButtonColor: '#f8f9fa', 
         
         customClass: {
-            popup: 'rounded-4 shadow-sm border-0', // Redondeado más suave
+            popup: 'rounded-4 shadow-sm border-0',
             title: 'fw-bold text-dark fs-4 mb-2',
-            input: 'custom-swal-input-slim', // Clase nueva para el input
-            confirmButton: 'btn btn-warning btn-md rounded-pill px-4 fw-bold shadow-sm', // Botón más pequeño
+            input: 'custom-swal-input-slim', 
+            confirmButton: 'btn btn-warning btn-md rounded-pill px-4 fw-bold shadow-sm', 
             cancelButton: 'btn btn-light btn-md rounded-pill px-4 fw-bold text-muted border ms-2'
         },
 
-        // Estilización súper fina del input con CSS inyectado
         didOpen: () => {
             const input = Swal.getInput();
-            // Quitamos todo lo tosco: sombra, bordes gruesos y padding exagerado
             input.style.boxShadow = 'none';
             input.style.transition = 'all 0.2s';
-            input.style.border = '0'; // Sin borde inicial
-            input.style.borderBottom = '2px solid #eee'; // Solo una línea abajo
-            input.style.borderRadius = '0'; // Sin esquinas redondeadas en el input
-            input.style.padding = '10px 5px'; // Padding mínimo
-            input.style.fontSize = '1.2rem'; // Fuente más normal
+            input.style.border = '0'; 
+            input.style.borderBottom = '2px solid #eee'; 
+            input.style.borderRadius = '0'; 
+            input.style.padding = '10px 5px'; 
+            input.style.fontSize = '1.2rem'; 
             input.style.fontWeight = 'normal';
             input.style.color = '#333';
-            input.style.maxWidth = '200px'; // Input más angosto
+            input.style.maxWidth = '200px'; 
 
-            // Estilos para quitar las flechitas (spinners) y efecto de foco
+
             const style = document.createElement('style');
             style.innerHTML = `
                 .custom-swal-input-slim::-webkit-inner-spin-button, 
@@ -195,7 +192,7 @@ function confirmarEliminarEvento(event, idEvento, cliente) {
         showCancelButton: true,
         confirmButtonText: 'Eliminar',
         cancelButtonText: 'Cancelar',
-        confirmButtonColor: '#dc3545', // Rojo sutil para peligro
+        confirmButtonColor: '#dc3545', 
         cancelButtonColor: '#f8f9fa',
         reverseButtons: true,
         customClass: {
@@ -211,14 +208,14 @@ function confirmarEliminarEvento(event, idEvento, cliente) {
     });
 }
 
-// Agrega esto en tu scripts de eventos_lista.html
+
 function eliminarEvento(id) {
     Swal.fire({
         title: '¿Eliminar registro?',
         text: "Esta acción no se puede deshacer",
         icon: 'warning',
         showCancelButton: true,
-        confirmButtonColor: '#dc3545', // Rojo para peligro
+        confirmButtonColor: '#dc3545', 
         cancelButtonColor: '#6c757d',
         confirmButtonText: 'Sí, borrar',
         cancelButtonText: 'Cancelar',

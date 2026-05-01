@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="container py-5">
+    <div class="card border-0 shadow-sm rounded-4 mx-auto p-4" style="max-width: 450px;">
+        <div class="text-center mb-4">
+            <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
+                 style="width: 60px; height: 60px; background-color: #f8f9fa;">
+                <i class="bi bi-pencil-fill fs-3 text-dark"></i>
+            </div>
+            <h4 class="fw-bold m-0">Editar Usuario</h4>
+            <p class="text-muted small">Modifica las credenciales de @{{ usuario.nombre_usuario }}</p>
+        </div>
+
+        <form action="/actualizar_usuario" method="POST">
+            <input type="hidden" name="id_usuario" value="{{ usuario.id_usuario }}">
+            
+            <div class="mb-3">
+                <label class="small fw-bold text-muted mb-1 ms-2">Nombre de Usuario</label>
+                <input type="text" name="nombre_usuario" class="form-control bg-light border-0" value="{{ usuario.nombre_usuario }}" required>
+            </div>
+
+            <div class="mb-3">
+                <label class="small fw-bold text-muted mb-1 ms-2">Nueva Contraseña</label>
+                <input type="password" name="password" class="form-control bg-light border-0" placeholder="Dejar vacío para no cambiar" minlength="8">
+                <div class="text-muted mt-1 ms-2" style="font-size: 0.7rem;">Mínimo 8 caracteres para seguridad.</div>
+            </div>
+
+            <div class="form-check form-switch mb-4 mt-3 ms-2">
+                <input class="form-check-input" type="checkbox" name="es_admin" id="edAdmin" {% if usuario.es_admin %}checked{% endif %}>
+                <label class="form-check-label fw-bold small text-muted" for="edAdmin">Permisos de Administrador</label>
+            </div>
+
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-dark shadow rounded-pill fw-bold py-2">ACTUALIZAR DATOS</button>
+                <a href="/usuarios" class="btn btn-link text-muted btn-sm text-decoration-none">Cancelar</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

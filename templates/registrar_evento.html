@@ -144,14 +144,12 @@
                 checks.forEach(check => {
                     if(check.checked) {
                         const precio = parseFloat(check.getAttribute('data-precio'));
-                        // Buscar el input de cantidad correspondiente a este checkbox
                         const inputCant = document.querySelector(`.paquete-cant[data-id="${check.value}"]`);
                         const cantidad = parseInt(inputCant.value) || 0;
                         
                         if(cantidad > 0) {
                             total += (precio * cantidad);
                         } else {
-                            // Si lo marca pero deja en 0, ponerle 1 automático
                             inputCant.value = 1;
                             total += precio;
                         }
@@ -162,17 +160,15 @@
                 return total;
             }
 
-            // Escuchar cambios en checkboxes y campos de cantidad
             checks.forEach(c => c.addEventListener('change', calcularTotal));
             cants.forEach(c => c.addEventListener('input', calcularTotal));
 
-            // Validar antes de enviar el formulario
             formVenta.addEventListener('submit', function(e) {
                 const totalCalculado = calcularTotal();
                 const adelanto = parseFloat(inputAdelanto.value) || 0;
 
                 if(adelanto > totalCalculado) {
-                    e.preventDefault(); // Evita que se guarde
+                    e.preventDefault(); 
                     inputAdelanto.style.borderColor = 'red';
                     inputAdelanto.style.boxShadow = '0 0 0 0.25rem rgba(220, 53, 69, 0.25)';
                     errorAdelanto.classList.remove('d-none');
@@ -182,7 +178,6 @@
                 }
             });
 
-            // Limpiar error visual si el usuario modifica el adelanto
             inputAdelanto.addEventListener('input', function() {
                 this.style.borderColor = '#DDD';
                 this.style.boxShadow = 'none';

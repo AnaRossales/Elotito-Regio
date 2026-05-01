@@ -12,48 +12,161 @@
             --elote-gold: #FFC107;
             --elote-orange: #FFA000;
             --elote-green: #4CAF50; 
-            --bg-body: #ffffff; 
             --text-dark: #3E2723;
         }
-        body { font-family: 'Open Sans', sans-serif; background-color: var(--bg-body); color: var(--text-dark); }
-        h1, h2, h3, h4, h5, h6, .navbar-brand { font-family: 'Montserrat', sans-serif; font-weight: 700; color: var(--text-dark); }
-        .main-title { text-align: center; color: var(--elote-green) !important; margin-top: 3rem; margin-bottom: 2.5rem; position: relative; display: inline-block; left: 50%; transform: translateX(-50%); }
-        .main-title::after { content: ''; display: block; width: 80%; height: 6px; background-color: var(--elote-orange); margin: 10px auto 0; border-radius: 5px; }
-        .navbar-main { background-color: white !important; box-shadow: 0 4px 15px rgba(0,0,0,0.06); padding: 1rem 0; }
-        .navbar-brand { font-weight: 700; color: var(--elote-gold) !important; text-transform: uppercase; }
-        .nav-link { color: var(--text-dark) !important; font-weight: 600; text-transform: uppercase; font-size: 0.85rem; padding: 1rem !important; }
-        .nav-link:hover { color: var(--elote-orange) !important; }
-        .card-custom { background-color: white; border: 1px solid #f0f0f0; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); margin-bottom: 2rem; max-width: 800px; margin-left: auto; margin-right: auto; padding: 2.5rem; }
-        .form-label-custom { font-weight: 700; color: #555; text-transform: uppercase; font-size: 0.85rem; margin-bottom: 0.5rem; margin-left: 1rem; }
-        .form-control, .form-select { border-radius: 50px !important; border: 1px solid #DDD; padding: 0.75rem 1.5rem; height: calc(1.5em + 1.5rem + 2px); }
-        .form-control:focus, .form-select:focus { border-color: var(--elote-gold); box-shadow: 0 0 0 0.25rem rgba(255, 193, 7, 0.2); }
-        .form-group-flex { display: flex; gap: 1rem; align-items: center; }
-        .form-group-flex .form-select { flex-grow: 1; }
-        .btn-custom-orange { background-color: var(--elote-orange); color: white; border: none; border-radius: 50px; font-weight: 600; padding: 0.75rem 1.5rem; height: calc(1.5em + 1.5rem + 2px); display: flex; align-items: center; justify-content: center; transition: all 0.2s; white-space: nowrap; text-decoration: none;}
-        .btn-custom-orange:hover { background-color: #E68A00; transform: translateY(-2px); color: white; }
-        .btn-custom-success { background-color: var(--elote-green); color: white; border: none; border-radius: 50px; font-weight: 600; padding: 10px 30px; transition: all 0.2s; }
-        .btn-custom-success:hover { background-color: #388E3C; transform: translateY(-2px); color: white; }
-        .btn-center-container { text-align: center; margin-top: 3rem; }
+        body { 
+            font-family: 'Open Sans', sans-serif; 
+            background-color: #f8f9fa; 
+            color: var(--text-dark); 
+            overflow-x: hidden; 
+        }
+        h1, h2, h3, h4, h5, h6 { font-family: 'Montserrat', sans-serif; font-weight: 700; color: var(--text-dark); }
+        
+
+        #sidebar-wrapper {
+            position: fixed; 
+            top: 0;
+            left: 0;
+            width: 250px;
+            height: 100vh;
+            background-color: #ffffff;
+            border-right: 1px solid #eeeeee;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        #page-content-wrapper {
+            margin-left: 250px; 
+            width: calc(100% - 250px);
+            min-height: 100vh;
+            padding-bottom: 50px;
+        }
+
+
+        .list-group-item { 
+            border: none; 
+            border-radius: 12px; 
+            margin-bottom: 5px; 
+            color: #6c757d; 
+            font-weight: 600; 
+            transition: all 0.2s; 
+        }
+        .list-group-item:hover { 
+            background-color: #f8f9fa; 
+            color: #212529; 
+            transform: translateX(4px);
+        }
+        .active-menu { 
+            background-color: #FFF9DB !important; 
+            color: #B8860B !important; 
+        }
+        
+        /* Alertas Globales */
+        .alert-global {
+            border: none;
+            border-radius: 12px;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        #sidebar-wrapper {
+            position: fixed; 
+            top: 0;
+            left: 0;
+            width: 250px;
+            height: 100vh;
+            background-color: #ffffff;
+            border-right: 1px solid #eeeeee;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        #sidebar-wrapper::-webkit-scrollbar {
+            width: 0px;
+            background: transparent;
+        }
+
+        #page-content-wrapper {
+            margin-left: 250px; 
+            width: calc(100% - 250px);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
     </style>
 </head>
 <body>
-<nav class="navbar navbar-expand-lg navbar-light navbar-main">
-    <div class="container">
-        <a class="navbar-brand" href="/admin">Panel Admin</a>
-        <div class="collapse navbar-collapse justify-content-end">
-            <div class="navbar-nav align-items-center">
-                <a class="nav-link" href="/admin">Dashboard</a>
-                <a class="nav-link" href="/registrar_evento">Registrar Venta</a>
-                <a class="nav-link" href="/eventos_lista">Historial</a>
-                <a class="nav-link" href="/clientes">Clientes</a>
-                <a class="nav-link" href="/paquetes">Paquetes</a>
-                <a href="/logout" class="btn btn-outline-danger btn-sm rounded-pill ms-3 fw-bold">Cerrar Sesión</a>
+
+    <div id="sidebar-wrapper">
+        <div class="sidebar-heading text-center py-4">
+            <img src="{{ url_for('static', filename='logo.png') }}" width="150" alt="Logo">
+        </div>
+
+        <div class="list-group list-group-flush mx-3 flex-grow-1 mt-2">
+            <a href="/admin" class="list-group-item list-group-item-action py-3 ripple {% if request.path == '/admin' %}active-menu{% endif %}">
+                <i class="bi bi-house-door-fill me-3"></i><span>Inicio</span>
+            </a>
+            <a href="/eventos_lista" class="list-group-item list-group-item-action py-3 ripple {% if request.path == '/eventos_lista' %}active-menu{% endif %}">
+                <i class="bi bi-calendar-event-fill me-3"></i><span>Eventos</span>
+            </a>
+            <a href="/clientes" class="list-group-item list-group-item-action py-3 ripple {% if request.path == '/clientes' %}active-menu{% endif %}">
+                <i class="bi bi-person-fill me-3"></i><span>Clientes</span>
+            </a>
+
+            {% if session.es_admin %}
+                <a href="/paquetes" class="list-group-item list-group-item-action py-3 ripple {% if request.path == '/paquetes' %}active-menu{% endif %}">
+                    <i class="bi bi-box-seam-fill me-3"></i><span>Paquetes</span>
+                </a>
+                <a href="/insumos" class="list-group-item list-group-item-action py-3 ripple {% if request.path == '/insumos' %}active-menu{% endif %}">
+                    <i class="bi bi-cart-fill me-3"></i><span>Insumos</span>
+                </a>
+                <a href="/proveedores" class="list-group-item list-group-item-action py-3 ripple {% if request.path == '/proveedores' %}active-menu{% endif %}">
+                    <i class="bi bi-truck-front-fill me-3"></i><span>Proveedores</span>
+                </a>
+                <a href="/usuarios" class="list-group-item list-group-item-action py-3 ripple {% if request.path == '/usuarios' %}active-menu{% endif %}">
+                    <i class="bi bi-people-fill me-3"></i><span>Usuarios</span>
+                </a>
+            {% endif %}
+        </div>
+
+        <div class="list-group list-group-flush mx-3 mb-4">
+            <hr class="opacity-25 mb-3">
+            <a href="/logout" class="list-group-item list-group-item-action py-3 ripple text-danger">
+                <i class="bi bi-box-arrow-right me-3"></i><span>Cerrar Sesión</span>
+            </a>
+        </div>
+    </div>
+
+    <div id="page-content-wrapper">
+        <div class="container py-4">
+            <div class="row justify-content-center">
+                <div class="col-12" style="max-width: 1050px;">
+                    
+                    {% with messages = get_flashed_messages(with_categories=true) %}
+                        {% if messages %}
+                            {% for category, message in messages %}
+                                {% if category == 'success' %}
+                                    <div class="alert alert-success alert-global mb-4" style="background-color: #d4edda; color: #155724;">
+                                        <i class="bi bi-check-circle-fill me-2"></i> {{ message }}
+                                    </div>
+                                {% else %}
+                                    <div class="alert alert-danger alert-global mb-4" style="background-color: #f8d7da; color: #721c24;">
+                                        <i class="bi bi-exclamation-triangle-fill me-2"></i> {{ message }}
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
+                    {% endwith %}
+
+                    {% block content %}{% endblock %}
+
+                </div>
             </div>
         </div>
     </div>
-</nav>
-    <div class="container my-5">
-        {% block content %}{% endblock %}
-    </div>
-</body>
-</html>
+
+    <script src="

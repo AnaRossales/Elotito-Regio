@@ -9,7 +9,10 @@ app = Flask(__name__)
 app.secret_key = 'elotito_regio_secreto_12345' 
 conexion_db = db_manager.crear_conexion()
 
-# Helper para verificar conexión
+# =================================================================
+# --- HELPERS Y SEGURIDAD ---
+# =================================================================
+
 def verificar_conexion():
     global conexion_db
     if not conexion_db or not conexion_db.is_connected():
@@ -19,9 +22,16 @@ def verificar_conexion():
 def requiere_login():
     return 'admin_logueado' not in session
 
+def requiere_admin():
+    """Retorna True si el usuario NO es administrador (bloqueo)"""
+    if 'usuario_id' not in session:
+        return True
+    return not session.get('es_admin', False)
+
 # =================================================================
 # --- ZONA PÚBLICA ---
 # =================================================================
+
 @app.route('/')
 def index_publico():
     con = verificar_conexion()
@@ -31,6 +41,7 @@ def index_publico():
 # =================================================================
 # --- SISTEMA DE LOGIN ---
 # =================================================================
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -43,7 +54,7 @@ def login():
             session['admin_logueado'] = True
             session['usuario_id'] = usuario_db['id_usuario']
             session['nombre_usuario'] = usuario_db['nombre_usuario']
-            session['es_admin'] = usuario_db['es_admin']
+            session['es_admin'] = bool(usuario_db['es_admin'])
             return redirect(url_for('dashboard_admin'))
         else:
             return render_template('login.html', error="Usuario o contraseña incorrectos")
@@ -52,12 +63,13 @@ def login():
 
 @app.route('/logout')
 def logout():
-    session.pop('admin_logueado', None)
+    session.clear()
     return redirect(url_for('index_publico'))
 
 # =================================================================
-# --- ZONA PRIVADA (DASHBOARD) ---
+# --- DASHBOARD ---
 # =================================================================
+
 @app.route('/admin')
 def dashboard_admin():
     if requiere_login(): return redirect(url_for('login'))
@@ -68,8 +80,9 @@ def dashboard_admin():
     return render_template('dashboard.html', stats=stats, ultimos_eventos=ultimos_eventos, proximo_evento=proximo)
 
 # =================================================================
-# --- MÓDULO DE EVENTOS ---
+# --- MÓDULO DE EVENTOS (Acceso Staff y Admin) ---
 # =================================================================
+
 @app.route('/registrar_evento')
 def pagina_registrar_evento():
     if requiere_login(): return redirect(url_for('login'))
@@ -175,8 +188,9 @@ def actualizar_evento(id):
     return redirect(url_for('pagina_eventos_lista'))
 
 # =================================================================
-# --- MÓDULO DE CLIENTES ---
+# --- MÓDULO DE CLIENTES (Acceso Staff y Admin) ---
 # =================================================================
+
 @app.route('/clientes')
 def pagina_clientes():
     if requiere_login(): return redirect(url_for('login'))
@@ -212,11 +226,14 @@ def eliminar_cliente(id):
     return redirect(url_for('pagina_clientes'))
 
 # =================================================================
-# --- MÓDULO DE PAQUETES ---
+# --- MÓDULOS RESTRINGIDOS (SÓLO ADMIN) ---
 # =================================================================
+
+# --- Paquetes ---
 @app.route('/paquetes')
 def pagina_paquetes():
     if requiere_login(): return redirect(url_for('login'))
+    if requiere_admin(): return redirect(url_for('dashboard_admin'))
     con = verificar_conexion()
     insumos = db_manager.get_insumos_db(con)
     paquetes = db_manager.get_paquetes_db(con)
@@ -224,7 +241,7 @@ def pagina_paquetes():
 
 @app.route('/guardar_paquete', methods=['POST'])
 def guardar_paquete():
-    if requiere_login(): return redirect(url_for('login'))
+    if requiere_login() or requiere_admin(): return redirect(url_for('dashboard_admin'))
     con = verificar_conexion()
     nuevo_paquete = Paquete(
         nombre=request.form['nombre_paquete'],
@@ -236,138 +253,152 @@ def guardar_paquete():
 
 @app.route('/eliminar_paquete/<int:id>')
 def eliminar_paquete(id):
-    if requiere_login(): return redirect(url_for('login'))
+    if requiere_login() or requiere_admin(): return redirect(url_for('dashboard_admin'))
     con = verificar_conexion()
     db_manager.eliminar_paquete_db(con, id)
     return redirect(url_for('pagina_paquetes'))
 
 @app.route('/actualizar_paquete', methods=['POST'])
 def actualizar_paquete():
+    if requiere_login() or requiere_admin(): return redirect(url_for('dashboard_admin'))
     id_paquete = request.form.get('id_paquete')
     nombre = request.form.get('nombre_paquete')
     precio = request.form.get('precio')
     desc = request.form.get('descripcion')
-    
     db_manager.update_paquete(id_paquete, nombre, precio, desc)
-    
     return redirect('/paquetes')
 
-# =================================================================
-# --- PROVEEDORES ---
-# =================================================================
-
+# --- Proveedores ---
 @app.route('/proveedores')
 def proveedores_view():
+    if requiere_login(): return redirect(url_for('login'))
+    if requiere_admin(): return redirect(url_for('dashboard_admin'))
     lista = db_manager.obtener_proveedores()
-    print(lista) 
     return render_template('proveedores.html', proveedores=lista)
 
 @app.route('/guardar_proveedor', methods=['POST'])
 def guardar_proveedor():
-    # Recibes todos los campos del formulario
-    nombre = request.form.get('nombre_contacto')
-    razon = request.form.get('razon_social')
-    rfc = request.form.get('rfc')
-    tel = request.form.get('telefono')
-    email = request.form.get('email')
-    
-    db_manager.insertar_proveedor(nombre, razon, rfc, tel, email)
+    if requiere_login() or requiere_admin(): return redirect(url_for('dashboard_admin'))
+    db_manager.insertar_proveedor(
+        request.form.get('nombre_contacto'),
+        request.form.get('razon_social'),
+        request.form.get('rfc'),
+        request.form.get('telefono'),
+        request.form.get('email')
+    )
     return redirect('/proveedores')
 
 @app.route('/actualizar_proveedor', methods=['POST'])
 def actualizar_proveedor():
-    # 1. Recibimos todos los campos del formulario
-    id_p = request.form.get('id_proveedor')
-    empresa = request.form.get('nombre_empresa')
-    contacto = request.form.get('contacto_nombre')
-    razon = request.form.get('razon_social')
-    rfc = request.form.get('rfc')
-    tel = request.form.get('telefono')
-    email = request.form.get('email')
-    
-    # 2. Mandamos los 7 datos EXACTOS a la base de datos
-    db_manager.update_proveedor(id_p, empresa, contacto, razon, rfc, tel, email)
-    
+    if requiere_login() or requiere_admin(): return redirect(url_for('dashboard_admin'))
+    db_manager.update_proveedor(
+        request.form.get('id_proveedor'),
+        request.form.get('nombre_empresa'),
+        request.form.get('contacto_nombre'),
+        request.form.get('razon_social'),
+        request.form.get('rfc'),
+        request.form.get('telefono'),
+        request.form.get('email')
+    )
     return redirect('/proveedores')
 
-# ==========================================
-# RUTAS DE INSUMOS
-# ==========================================
+@app.route('/eliminar_proveedor/<int:id>')
+def eliminar_proveedor(id):
+    if requiere_login() or requiere_admin(): return redirect(url_for('dashboard_admin'))
+    db_manager.borrar_proveedor(id)
+    return redirect('/proveedores')
 
+# --- Insumos ---
 @app.route('/insumos')
 def insumos_view():
+    if requiere_login(): return redirect(url_for('login'))
+    if requiere_admin(): return redirect(url_for('dashboard_admin'))
     lista_insumos = db_manager.obtener_insumos_completos()
-    lista_proveedores = db_manager.obtener_proveedores() # Sirve para el <select>
+    lista_proveedores = db_manager.obtener_proveedores() 
     return render_template('insumos.html', insumos=lista_insumos, proveedores=lista_proveedores)
 
 @app.route('/guardar_insumo', methods=['POST'])
 def guardar_insumo():
-    nombre = request.form.get('nombre_insumo')
-    costo = request.form.get('costo_unitario')
-    unidad = request.form.get('unidad_medida')
-    prov_id = request.form.get('id_proveedor')
-    
-    db_manager.insertar_insumo(nombre, costo, unidad, prov_id)
+    if requiere_login() or requiere_admin(): return redirect(url_for('dashboard_admin'))
+    db_manager.insertar_insumo(
+        request.form.get('nombre_insumo'),
+        request.form.get('costo_unitario'),
+        request.form.get('unidad_medida'),
+        request.form.get('id_proveedor')
+    )
     return redirect('/insumos')
 
 @app.route('/actualizar_insumo', methods=['POST'])
 def actualizar_insumo():
-    id_insumo = request.form.get('id_insumo')
-    nombre = request.form.get('nombre_insumo')
-    costo = request.form.get('costo_unitario')
-    unidad = request.form.get('unidad_medida')
-    prov_id = request.form.get('id_proveedor')
-    
-    db_manager.update_insumo(id_insumo, nombre, costo, unidad, prov_id)
+    if requiere_login() or requiere_admin(): return redirect(url_for('dashboard_admin'))
+    db_manager.update_insumo(
+        request.form.get('id_insumo'),
+        request.form.get('nombre_insumo'),
+        request.form.get('costo_unitario'),
+        request.form.get('unidad_medida'),
+        request.form.get('id_proveedor')
+    )
     return redirect('/insumos')
 
 @app.route('/eliminar_insumo/<int:id>')
 def eliminar_insumo(id):
+    if requiere_login() or requiere_admin(): return redirect(url_for('dashboard_admin'))
     db_manager.borrar_insumo(id)
     return redirect('/insumos')
 
-@app.route('/eliminar_proveedor/<int:id>')
-def eliminar_proveedor(id):
-    db_manager.borrar_proveedor(id)
-    return redirect('/proveedores')
+# --- Usuarios / Staff (Consolidado) ---
+@app.route('/usuarios')
+def pagina_usuarios():
+    if requiere_login(): return redirect(url_for('login'))
+    if requiere_admin(): return redirect(url_for('dashboard_admin'))
+    con = verificar_conexion()
+    lista = db_manager.get_usuarios_db(con)
+    return render_template('usuarios.html', lista_usuarios=lista, usuario_edit=None)
 
-# --- PROVEEDORES (Ajustado a tu SQL) ---
-def obtener_proveedores():
-    conexion = crear_conexion()
-    try:
-        with conexion.cursor(dictionary=True) as cursor:
-            # Usamos contacto_nombre como el nombre principal que se ve en la tabla
-            cursor.execute("SELECT * FROM proveedores")
-            return cursor.fetchall()
-    finally:
-        conexion.close()
+@app.route('/guardar_usuario', methods=['POST'])
+def guardar_usuario():
+    if requiere_login() or requiere_admin(): return redirect(url_for('dashboard_admin'))
+    con = verificar_conexion()
+    db_manager.agregar_usuario_db(
+        con, 
+        request.form.get('nombre_usuario'), 
+        request.form.get('password'), 
+        1 if request.form.get('es_admin') else 0
+    )
+    flash("Usuario guardado", "success")
+    return redirect(url_for('pagina_usuarios'))
 
-def insertar_proveedor(nombre_emp, contacto, razon, rfc, tel, email):
-    conexion = crear_conexion()
-    try:
-        with conexion.cursor() as cursor:
-            sql = """INSERT INTO proveedores (nombre_empresa, contacto_nombre, razon_social, rfc, telefono, email) 
-                     VALUES (%s, %s, %s, %s, %s, %s)"""
-            cursor.execute(sql, (nombre_emp, contacto, razon, rfc, tel, email))
-            conexion.commit()
-    finally:
-        conexion.close()
+@app.route('/editar_usuario/<int:id>')
+def editar_usuario(id):
+    if requiere_login() or requiere_admin(): return redirect(url_for('dashboard_admin'))
+    con = verificar_conexion()
+    u_edit = db_manager.obtener_usuario_por_id(con, id)
+    lista = db_manager.get_usuarios_db(con)
+    return render_template('usuarios.html', usuario_edit=u_edit, lista_usuarios=lista)
 
-# --- INSUMOS (Ajustado para el JOIN) ---
-def obtener_insumos_completos():
-    conexion = crear_conexion()
-    try:
-        with conexion.cursor(dictionary=True) as cursor:
-            # Join con proveedores usando tus nombres de columna
-            sql = """
-                SELECT i.*, p.contacto_nombre as nombre_proveedor 
-                FROM insumos i 
-                LEFT JOIN proveedores p ON i.id_proveedor = p.id_proveedor
-            """
-            cursor.execute(sql)
-            return cursor.fetchall()
-    finally:
-        conexion.close()
+@app.route('/actualizar_usuario', methods=['POST'])
+def actualizar_usuario():
+    if requiere_login() or requiere_admin(): return redirect(url_for('dashboard_admin'))
+    con = verificar_conexion()
+    db_manager.actualizar_usuario_db(
+        con, 
+        request.form.get('id_usuario'), 
+        request.form.get('nombre_usuario'), 
+        request.form.get('password'), 
+        1 if request.form.get('es_admin') else 0
+    )
+    flash("Usuario actualizado", "success")
+    return redirect(url_for('pagina_usuarios'))
+
+@app.route('/eliminar_usuario/<int:id>')
+def eliminar_usuario(id):
+    if requiere_login() or requiere_admin(): return redirect(url_for('dashboard_admin'))
+    if id == session.get('usuario_id'):
+        flash("No puedes eliminar tu propio acceso", "error")
+    else:
+        con = verificar_conexion()
+        db_manager.eliminar_usuario_db(con, id)
+    return redirect(url_for('pagina_usuarios'))
 
 # =================================================================
 # --- ARRANQUE ---

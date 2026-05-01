@@ -2,18 +2,18 @@
 {% block title %}Centro de Informes - Elotito Regio{% endblock %}
 {% block content %}
 
-<div class="container-fluid px-4">
-    <div class="d-flex justify-content-between align-items-center mb-4 mt-4">
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4 mt-2">
         <div>
             <h1 class="fw-bold text-dark m-0">Centro de Informes Operativos</h1>
-            <p class="text-muted">Resumen ejecutivo y análisis de eventos</p>
+            <p class="text-muted small">Resumen ejecutivo y análisis detallado de eventos</p>
         </div>
         <div class="text-end">
             <a href="/registrar_evento" class="btn btn-warning rounded-pill px-4 fw-bold shadow-sm">+ Nueva Venta</a>
         </div>
     </div>
 
-    <div class="row g-4 mb-5">
+    <div class="row g-4 mb-4">
         <div class="col-md-3">
             <div class="card border-0 shadow-sm rounded-4 h-100 p-3" style="background: linear-gradient(135deg, #FFC107 0%, #FFA000 100%); color: white;">
                 <h6 class="text-uppercase small fw-bold opacity-75">Ingresos Totales Brutos</h6>
@@ -45,8 +45,10 @@
         </div>
     </div>
 
-    <div class="row g-4">
-        <div class="col-lg-8">
+    <div class="row g-4 align-items-stretch">
+        
+        <div class="col-lg-8 d-flex flex-column">
+            
             {% if proximo_evento %}
             <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4 position-relative overflow-hidden">
                 <div class="position-absolute top-0 start-0 w-100" style="height: 4px; background-color: #4CAF50;"></div>
@@ -64,19 +66,18 @@
             </div>
             {% endif %}
 
-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white flex-grow-1">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h5 class="fw-bold text-uppercase text-muted m-0 small">Agenda Operativa Reciente</h5>
-                    <a href="/eventos_lista" class="btn btn-sm btn-outline-secondary rounded-pill px-3">Ver historial completo</a>
+                    <a href="/eventos_lista" class="btn btn-sm btn-outline-secondary rounded-pill px-3">Ver historial</a>
                 </div>
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle">
+                    <table class="table table-hover align-middle m-0">
                         <thead class="bg-light small text-uppercase text-muted">
                             <tr>
                                 <th class="py-3 px-3">Fecha</th>
                                 <th class="py-3">Cliente</th>
-                                <th class="py-3">Ubicación</th>
-                                <th class="py-3">Saldo</th>
+                                <th class="py-3 text-end">Saldo</th>
                                 <th class="py-3 text-center">Estado</th>
                             </tr>
                         </thead>
@@ -86,8 +87,7 @@
                                 <tr>
                                     <td class="py-3 px-3 text-muted fw-bold">{{ e.fecha }}</td>
                                     <td class="py-3 fw-bold text-dark">{{ e.cliente }}</td>
-                                    <td class="py-3 small text-muted">{{ e.lugar }}</td>
-                                    <td class="py-3 fw-bold text-danger">${{ "%.2f"|format(adeudo) }}</td>
+                                    <td class="py-3 text-end fw-bold text-danger">${{ "%.2f"|format(adeudo) }}</td>
                                     <td class="py-3 text-center">
                                         {% if adeudo <= 0 %}
                                             <span class="badge bg-success-subtle text-success rounded-pill px-3">Liquidado</span>
@@ -97,7 +97,7 @@
                                     </td>
                                 </tr>
                             {% else %}
-                                <tr><td colspan="5" class="text-center py-5 text-muted">No hay eventos recientes.</td></tr>
+                                <tr><td colspan="4" class="text-center py-5 text-muted">No hay eventos registrados.</td></tr>
                             {% endfor %}
                         </tbody>
                     </table>
@@ -105,7 +105,8 @@
             </div>
         </div>
 
-        <div class="col-lg-4">
+        <div class="col-lg-4 d-flex flex-column">
+            
             <div class="card border-0 shadow-sm rounded-4 p-4 bg-white mb-4">
                 <h5 class="fw-bold text-uppercase text-muted mb-3 small">Resumen de Cobranza</h5>
                 <div class="d-flex justify-content-between mb-2">
@@ -115,150 +116,103 @@
                 
                 {% set porcentaje_cobro = (stats.adelantos_totales / stats.ingresos_totales * 100) if stats.ingresos_totales > 0 else 0 %}
                 
-                <div class="progress mb-3" style="height: 8px; border-radius: 10px;">
+                <div class="progress mb-3" style="height: 10px; border-radius: 10px;">
                     <div class="progress-bar bg-success" style="width: {{ porcentaje_cobro }}%"></div>
                 </div>
                 <div class="d-flex justify-content-between small text-muted fw-bold">
                     <span>{{ "%.0f"|format(porcentaje_cobro) }}% Cobrado</span>
-                    <span>Restan: ${{ "%.2f"|format(stats.ingresos_totales - stats.adelantos_totales) }}</span>
+                    <span>Resta: ${{ "%.2f"|format(stats.ingresos_totales - stats.adelantos_totales) }}</span>
                 </div>
             </div>
 
-            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
-                <h5 class="fw-bold text-uppercase text-muted mb-3 small">Panel de Gestión</h5>
-                
-                <div class="d-grid gap-1">
-                    <a href="/paquetes" class="menu-item-custom">
-                        <div class="icon-box bg-warning-subtle">
-                            <i class="bi bi-box-seam text-warning"></i>
-                        </div>
-                        <div class="ms-3">
-                            <span class="title">Ajustar Precios</span>
-                            <span class="subtitle">Gestión de paquetes</span>
+            <div class="card border-0 shadow-sm rounded-4 p-4 bg-white flex-grow-1">
+                <h5 class="fw-bold text-uppercase text-muted mb-4 small text-center">Panel de Gestión</h5>
+                <div class="d-grid gap-2">
+                    <a href="/eventos_lista" class="btn btn-light text-start py-3 px-3 rounded-4 border-0 mb-1">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-primary bg-opacity-10 p-2 rounded-3 me-3">
+                                <i class="bi bi-calendar-check text-primary"></i>
+                            </div>
+                            <span class="fw-bold text-dark">Ver Historial</span>
                         </div>
                     </a>
-
-                    <a href="/clientes" class="menu-item-custom">
-                        <div class="icon-box bg-primary-subtle">
-                            <i class="bi bi-person-gear text-primary"></i>
-                        </div>
-                        <div class="ms-3">
-                            <span class="title">Depurar Clientes</span>
-                            <span class="subtitle">Base de contactos</span>
-                        </div>
-                    </a>
-
-                    <a href="/proveedores" class="menu-item-custom">
-                        <div class="icon-box bg-success-subtle">
-                            <i class="bi bi-truck text-success"></i>
-                        </div>
-                        <div class="ms-3">
-                            <span class="title">Proveedores</span>
-                            <span class="subtitle">Datos fiscales y RFC</span>
+                    
+                    {% if session.es_admin %}
+                    <a href="/paquetes" class="btn btn-light text-start py-3 px-3 rounded-4 border-0 mb-1">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-warning bg-opacity-10 p-2 rounded-3 me-3">
+                                <i class="bi bi-box-seam text-warning"></i>
+                            </div>
+                            <span class="fw-bold text-dark">Ajustar Precios</span>
                         </div>
                     </a>
-
-                    <a href="/usuarios" class="menu-item-custom">
-                        <div class="icon-box bg-info-subtle">
-                            <i class="bi bi-people text-info"></i>
-                        </div>
-                        <div class="ms-3">
-                            <span class="title">Empleados</span>
-                            <span class="subtitle">Control de acceso</span>
+                    <a href="/usuarios" class="btn btn-light text-start py-3 px-3 rounded-4 border-0 mb-1">
+                        <div class="d-flex align-items-center">
+                            <div class="bg-dark bg-opacity-10 p-2 rounded-3 me-3">
+                                <i class="bi bi-people-fill text-dark"></i>
+                            </div>
+                            <span class="fw-bold text-dark">Control Staff</span>
                         </div>
                     </a>
-
+                    {% endif %}
+                    
                     <hr class="my-3 opacity-25">
-
-                    <button onclick="window.print()" class="menu-item-custom w-100 border-0 bg-transparent">
-                        <div class="icon-box bg-secondary-subtle">
-                            <i class="bi bi-printer text-secondary"></i>
-                        </div>
-                        <div class="ms-3 text-start">
-                            <span class="title">Imprimir Informe</span>
-                            <span class="subtitle">Generar reporte PDF</span>
-                        </div>
+                    <button onclick="window.print()" class="btn btn-outline-secondary border-0 text-start py-2 px-3 rounded-3 small">
+                        <i class="bi bi-printer me-2"></i> Generar Reporte PDF
                     </button>
                 </div>
             </div>
         </div>
     </div>
 </div>
-
 <style>
-    /* Estilo para los botones del panel lateral */
-    .menu-item-custom {
-        display: flex;
-        align-items: center;
-        padding: 12px;
-        text-decoration: none;
-        border-radius: 12px;
-        transition: all 0.2s ease-in-out;
-        border: 1px solid transparent;
-    }
+    @media print {
+        #sidebar-wrapper,      
+        .btn,                  
+        .d-grid a,             
+        hr {
+            display: none !important;
+        }
 
-    .menu-item-custom:hover {
-        background-color: #f8f9fa;
-        border-color: #f1f3f5;
-        transform: translateX(5px);
-    }
+        #page-content-wrapper {
+            margin-left: 0 !important;
+            width: 100% !important;
+            padding: 0 !important;
+        }
 
-    .icon-box {
-        width: 42px;
-        height: 42px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        border-radius: 10px;
-        font-size: 1.2rem;
-        flex-shrink: 0;
-    }
+        body, .bg-light, .container-fluid {
+            background-color: white !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
 
-    .menu-item-custom .title {
-        display: block;
-        font-weight: 700;
-        font-size: 0.85rem;
-        color: #212529;
-        line-height: 1.2;
-    }
+        .card {
+            box-shadow: none !important;
+            border: 1px solid #dee2e6 !important;
+            break-inside: avoid; /* Evita que una tarjeta se corte a la mitad de la hoja */
+            margin-bottom: 20px !important;
+        }
 
-    .menu-item-custom .subtitle {
-        display: block;
-        font-size: 0.7rem;
-        color: #868e96;
-    }
+        
+        * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+        }
 
-    /* Colores Pastel */
-    .bg-warning-subtle { background-color: #fff9db !important; }
-    .bg-primary-subtle { background-color: #e7f5ff !important; }
-    .bg-success-subtle { background-color: #ebfbee !important; }
-    .bg-info-subtle { background-color: #e3fafc !important; }
-    .bg-secondary-subtle { background-color: #f1f3f5 !important; }
-    
-    .text-info { color: #1098ad !important; }
+        .col-lg-4 .card:last-child {
+            display: none !important;
+        }
 
-    /* Estilos de Tabla */
-    .table thead th {
-        border-top: none;
-        letter-spacing: 0.5px;
-    }
-    
-    /* Botón Nueva Venta personalizado */
-    .btn-custom-orange {
-        background-color: #F57C00;
-        color: white;
-        border: none;
-        padding: 10px 20px;
-        border-radius: 50px;
-        font-weight: bold;
-        transition: 0.3s;
-    }
-    
-    .btn-custom-orange:hover {
-        background-color: #E65100;
-        color: white;
-        transform: scale(1.05);
+        body::before {
+            content: "Reporte Generado - Elotito Regio";
+            display: block;
+            text-align: right;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+        }
     }
 </style>
-
 {% endblock %}

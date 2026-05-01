@@ -51,8 +51,8 @@
                 {% if cliente_editar %}
                     <a href="/clientes" class="btn btn-outline-secondary shadow-sm rounded-pill px-4 me-2">Cancelar</a>
                 {% endif %}
-                <button type="submit" class="btn btn-custom-success shadow rounded-pill px-5">
-                    {% if cliente_editar %}Actualizar Cliente{% else %}Guardar Cliente{% endif %}
+                <button type="submit" id="btnAccion" class="btn btn-warning rounded-pill px-5 py-2 fw-bold shadow-sm text-uppercase">
+                        {% if cliente_editar %}Actualizar Cliente{% else %}Guardar Cliente{% endif %}
                 </button>
             </div>
         </form>
@@ -116,14 +116,14 @@
     <script>
         // Pop-up para Guardar/Actualizar
         function confirmarGuardado(event, form, titulo) {
-            event.preventDefault(); // Detiene el envío automático
+            event.preventDefault(); 
             
             Swal.fire({
                 title: titulo,
                 text: "Verifica que la información sea correcta antes de continuar.",
                 icon: 'question',
                 showCancelButton: true,
-                confirmButtonColor: '#4CAF50', // Tu verde de éxito
+                confirmButtonColor: '#4CAF50', 
                 cancelButtonColor: '#6c757d',
                 confirmButtonText: 'Sí, guardar',
                 cancelButtonText: 'Cancelar',
@@ -131,28 +131,27 @@
                 borderRadius: '15px'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    form.submit(); // Si dice que sí, envía el formulario
-                }
+                    form.submit(); 
             });
         }
 
         // Pop-up para Eliminar
         function confirmarEliminacion(event, url, nombreCliente) {
-            event.preventDefault(); // Detiene el click en el enlace
+            event.preventDefault(); 
             
             Swal.fire({
                 title: '¿Eliminar a ' + nombreCliente + '?',
                 text: "Esta acción no se puede deshacer. (El sistema la bloqueará automáticamente si el cliente tiene eventos registrados).",
                 icon: 'warning',
                 showCancelButton: true,
-                confirmButtonColor: '#dc3545', // Rojo de peligro
+                confirmButtonColor: '#dc3545', 
                 cancelButtonColor: '#6c757d',
                 confirmButtonText: '<i class="bi bi-trash"></i> Sí, eliminar',
                 cancelButtonText: 'Cancelar',
                 reverseButtons: true
             }).then((result) => {
                 if (result.isConfirmed) {
-                    window.location.href = url; // Si dice que sí, lo lleva a la ruta de borrar
+                    window.location.href = url; 
                 }
             });
         }
