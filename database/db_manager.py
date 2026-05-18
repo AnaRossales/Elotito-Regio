@@ -5,9 +5,10 @@ from models.cliente import Cliente
 from models.paquete import Paquete
 from models.evento import Evento
 
-# =================================================================
-# --- CONEXIÓN A BASE DE DATOS ---
-# =================================================================
+# ────────────── ୨୧ ────────────────
+# ═══════ CONEXIÓN A BD ═══════
+# ────────────── ୨୧ ────────────────
+
 def crear_conexion():
     try:
         conexion = mysql.connector.connect(
@@ -22,9 +23,10 @@ def crear_conexion():
         print(f"Error al conectar a MySQL: {e}")
         return None
 
-# =================================================================
-# --- DASHBOARD ---
-# =================================================================
+# ────────────── ୨୧ ────────────────
+# ═══════ DASHBOARD ═══════
+# ────────────── ୨୧ ────────────────
+
 def get_dashboard_stats(conexion):
     stats = {"total_clientes": 0, "total_eventos": 0, "ingresos_totales": 0.0, "adelantos_totales": 0.0}
     cursor = None
@@ -45,15 +47,15 @@ def get_dashboard_stats(conexion):
         if cursor: cursor.close()
     return stats
 
-# =================================================================
-# --- USUARIOS Y SEGURIDAD ---
-# =================================================================
+# ────────────── ୨୧ ────────────────
+# ═══════ USUARIOS ═══════
+# ────────────── ୨୧ ────────────────
+
 def get_usuario_por_nombre(conexion, nombre_usuario):
     cursor = None
     try:
-        # CRÍTICO: dictionary=True para poder acceder a los datos por nombre de columna
         cursor = conexion.cursor(dictionary=True) 
-        cursor.execute("SELECT * FROM usuarios WHERE nombre_usuario = %s", (nombre_usuario,))
+        cursor.execute("SELECT u.*, r.es_admin FROM usuarios u JOIN roles r ON u.id_rol = r.id_rol WHERE u.nombre_usuario = %s", (nombre_usuario,))
         return cursor.fetchone()
     except Error as e:
         print(f"Error al consultar usuario: {e}")
@@ -64,38 +66,39 @@ def get_usuario_por_nombre(conexion, nombre_usuario):
 def get_usuarios_db(conexion):
     cursor = conexion.cursor(dictionary=True)
     try:
-        cursor.execute("SELECT id_usuario, nombre_usuario, es_admin FROM usuarios")
+        cursor.execute("SELECT u.id_usuario, u.nombre_usuario, u.nombre, u.apellido_paterno, u.apellido_materno, r.es_admin FROM usuarios u JOIN roles r ON u.id_rol = r.id_rol")
         return cursor.fetchall()
     finally:
         cursor.close()
 
 def obtener_usuario_por_id(conexion, id_usuario):
     cursor = conexion.cursor(dictionary=True)
-    cursor.execute("SELECT id_usuario, nombre_usuario, es_admin FROM usuarios WHERE id_usuario = %s", (id_usuario,))
+    cursor.execute("SELECT u.id_usuario, u.nombre_usuario, u.nombre, u.apellido_paterno, u.apellido_materno, r.es_admin, u.id_rol FROM usuarios u JOIN roles r ON u.id_rol = r.id_rol WHERE u.id_usuario = %s", (id_usuario,))
     usuario = cursor.fetchone()
     cursor.close()
     return usuario
 
-def agregar_usuario_db(conexion, nombre_usuario, password_plano, es_admin):
+def agregar_usuario_db(conexion, nombre_usuario, nombre, apellido_paterno, apellido_materno, id_rol, password_plano):
     cursor = conexion.cursor()
     try:
         pw_hash = generate_password_hash(password_plano)
-        sql = "INSERT INTO usuarios (nombre_usuario, password_hash, es_admin) VALUES (%s, %s, %s)"
-        cursor.execute(sql, (nombre_usuario, pw_hash, es_admin))
+        sql = "INSERT INTO usuarios (id_rol, nombre_usuario, nombre, apellido_paterno, apellido_materno, password_hash) VALUES (%s, %s, %s, %s, %s, %s)"
+        
+        cursor.execute(sql, (id_rol, nombre_usuario, nombre, apellido_paterno, apellido_materno, pw_hash))
         conexion.commit()
     finally:
         cursor.close()
 
-def actualizar_usuario_db(conexion, id_u, nombre, password_plano, es_admin):
+def actualizar_usuario_db(conexion, id_u, nombre_usuario, nombre, apellido_paterno, apellido_materno, id_rol, password_plano):
     cursor = conexion.cursor()
     try:
         if password_plano and len(password_plano) >= 8:
             pw_hash = generate_password_hash(password_plano)
-            sql = "UPDATE usuarios SET nombre_usuario=%s, password_hash=%s, es_admin=%s WHERE id_usuario=%s"
-            cursor.execute(sql, (nombre, pw_hash, es_admin, id_u))
+            sql = "UPDATE usuarios SET nombre_usuario=%s, nombre=%s, apellido_paterno=%s, apellido_materno=%s, id_rol=%s, password_hash=%s WHERE id_usuario=%s"
+            cursor.execute(sql, (nombre_usuario, nombre, apellido_paterno, apellido_materno, id_rol, pw_hash, id_u))
         else:
-            sql = "UPDATE usuarios SET nombre_usuario=%s, es_admin=%s WHERE id_usuario=%s"
-            cursor.execute(sql, (nombre, es_admin, id_u))
+            sql = "UPDATE usuarios SET nombre_usuario=%s, nombre=%s, apellido_paterno=%s, apellido_materno=%s, id_rol=%s WHERE id_usuario=%s"
+            cursor.execute(sql, (nombre_usuario, nombre, apellido_paterno, apellido_materno, id_rol, id_u))
         conexion.commit()
     finally:
         cursor.close()
@@ -105,17 +108,20 @@ def eliminar_usuario_db(conexion, id_usuario):
     try:
         cursor.execute("DELETE FROM usuarios WHERE id_usuario = %s", (id_usuario,))
         conexion.commit()
+    except Error as e:
+         print(f"Error: No se puede eliminar un usuario con eventos registrados.")
     finally:
         cursor.close()
 
-# =================================================================
-# --- CLIENTES ---
-# =================================================================
+# ────────────── ୨୧ ────────────────
+# ═══════ CLIENTES ═══════
+# ────────────── ୨୧ ────────────────
+
 def get_clientes_db(conexion, busqueda=None):
     clientes = []
     cursor = None
     try:
-        cursor = conexion.cursor()
+        cursor = conexion.cursor(dictionary=True) # dictionary=True previene errores de mapeo
         if busqueda:
             sql = """
             SELECT id_cliente, nombre, apellido_paterno, apellido_materno, telefono, email 
@@ -128,7 +134,14 @@ def get_clientes_db(conexion, busqueda=None):
             cursor.execute("SELECT id_cliente, nombre, apellido_paterno, apellido_materno, telefono, email FROM clientes")
             
         for fila in cursor.fetchall():
-            clientes.append(Cliente(id_cliente=fila[0], nombre=fila[1], apellido_paterno=fila[2], apellido_materno=fila[3], telefono=fila[4], email=fila[5]))
+            clientes.append(Cliente(
+                id_cliente=fila['id_cliente'], 
+                nombre=fila['nombre'], 
+                apellido_paterno=fila['apellido_paterno'], 
+                apellido_materno=fila['apellido_materno'], 
+                telefono=fila['telefono'], 
+                email=fila['email']
+            ))
     except Error as e:
         print(f"Error al consultar clientes: {e}")
     finally:
@@ -136,18 +149,25 @@ def get_clientes_db(conexion, busqueda=None):
     return clientes
 
 def get_cliente_por_id(conexion, id_cliente):
-    cursor = conexion.cursor()
-    cursor.execute("SELECT id_cliente, nombre, apellido_paterno, apellido_materno, telefono, email FROM Clientes WHERE id_cliente = %s", (id_cliente,))
+    cursor = conexion.cursor(dictionary=True)
+    cursor.execute("SELECT id_cliente, nombre, apellido_paterno, apellido_materno, telefono, email FROM clientes WHERE id_cliente = %s", (id_cliente,))
     f = cursor.fetchone()
     cursor.close()
-    if f: return Cliente(id_cliente=f[0], nombre=f[1], apellido_paterno=f[2], apellido_materno=f[3], telefono=f[4], email=f[5])
+    if f: return Cliente(
+        id_cliente=f['id_cliente'], 
+        nombre=f['nombre'], 
+        apellido_paterno=f['apellido_paterno'], 
+        apellido_materno=f['apellido_materno'], 
+        telefono=f['telefono'], 
+        email=f['email']
+    )
     return None
 
 def agregar_cliente_db(conexion, cliente):
     cursor = None
     try:
         cursor = conexion.cursor()
-        sql = "INSERT INTO Clientes (nombre, apellido_paterno, apellido_materno, telefono, email) VALUES (%s, %s, %s, %s, %s)"
+        sql = "INSERT INTO clientes (nombre, apellido_paterno, apellido_materno, telefono, email) VALUES (%s, %s, %s, %s, %s)"
         valores = (cliente.nombre, cliente.apellido_paterno, cliente.apellido_materno, cliente.telefono, cliente.email)
         cursor.execute(sql, valores)
         conexion.commit()
@@ -161,7 +181,7 @@ def agregar_cliente_db(conexion, cliente):
 def actualizar_cliente_db(conexion, cliente):
     cursor = conexion.cursor()
     try:
-        sql = "UPDATE Clientes SET nombre=%s, apellido_paterno=%s, apellido_materno=%s, telefono=%s, email=%s WHERE id_cliente=%s"
+        sql = "UPDATE clientes SET nombre=%s, apellido_paterno=%s, apellido_materno=%s, telefono=%s, email=%s WHERE id_cliente=%s"
         cursor.execute(sql, (cliente.nombre, cliente.apellido_paterno, cliente.apellido_materno, cliente.telefono, cliente.email, cliente.id_cliente))
         conexion.commit()
     except Error as e:
@@ -172,40 +192,39 @@ def actualizar_cliente_db(conexion, cliente):
 def eliminar_cliente_db(conexion, id_cliente):
     cursor = conexion.cursor()
     try:
-        cursor.execute("DELETE FROM Clientes WHERE id_cliente = %s", (id_cliente,))
+        cursor.execute("DELETE FROM clientes WHERE id_cliente = %s", (id_cliente,))
         conexion.commit()
+        return True  
     except Error as e:
-        print(f"Error: No se puede eliminar un cliente con eventos registrados.")
+        print(f"Error: No se puede eliminar el cliente. {e}")
+        return False 
     finally:
         cursor.close()
 
-# =================================================================
-# --- PROVEEDORES ---
-# =================================================================
+# ────────────── ୨୧ ────────────────
+# ═══════ PROVEEDORES ═══════
+# ────────────── ୨୧ ────────────────
+
 def obtener_proveedores():
     conexion = crear_conexion()
     proveedores = []
     try:
         with conexion.cursor(dictionary=True) as cursor:
-            cursor.execute("SELECT id_proveedor, contacto_nombre, razon_social, rfc, telefono, email FROM proveedores")
+            cursor.execute("SELECT id_proveedor, nombre_empresa, contacto_nombre, razon_social, rfc, telefono, email FROM proveedores")
             proveedores = cursor.fetchall()
     except Exception as e:
         print(f"Error al obtener proveedores: {e}")
-        with conexion.cursor() as cursor:
-            cursor.execute("SELECT id_proveedor, contacto_nombre, razon_social, rfc, telefono, email FROM proveedores")
-            columnas = [col[0] for col in cursor.description]
-            proveedores = [dict(zip(columnas, fila)) for fila in cursor.fetchall()]
     finally:
         conexion.close()
     return proveedores
 
-def insertar_proveedor(nombre, razon, rfc, tel, email):
+def insertar_proveedor(nombre_empresa, contacto_nombre, razon_social, rfc, tel, email):
     conexion = crear_conexion()
     try:
         with conexion.cursor() as cursor:
-            sql = """INSERT INTO proveedores (contacto_nombre, razon_social, rfc, telefono, email) 
-                     VALUES (%s, %s, %s, %s, %s)"""
-            cursor.execute(sql, (nombre, razon, rfc, tel, email))
+            sql = """INSERT INTO proveedores (nombre_empresa, contacto_nombre, razon_social, rfc, telefono, email) 
+                     VALUES (%s, %s, %s, %s, %s, %s)"""
+            cursor.execute(sql, (nombre_empresa, contacto_nombre, razon_social, rfc, tel, email))
             conexion.commit()
     except Exception as e:
         print(f"Error al insertar proveedor: {e}")
@@ -237,12 +256,13 @@ def borrar_proveedor(id_p):
     finally:
         conexion.close()
 
-# =================================================================
-# --- INSUMOS ---
-# =================================================================
+# ────────────── ୨୧ ────────────────
+# ═══════ INSUMOS ═══════
+# ────────────── ୨୧ ────────────────
+
 def get_insumos_db(conexion):
     cursor = conexion.cursor(dictionary=True)
-    query = "SELECT id_insumo, nombre_insumo, costo_unitario, unidad_medida FROM insumos"
+    query = "SELECT i.id_insumo, i.nombre_insumo, i.costo_unitario, u.nombre_unidad as unidad_medida FROM insumos i JOIN unidades_medida u ON i.id_unidad = u.id_unidad"
     cursor.execute(query)
     insumos = cursor.fetchall()
     cursor.close()
@@ -253,9 +273,10 @@ def obtener_insumos_completos():
     try:
         with conexion.cursor(dictionary=True) as cursor:
             sql = """
-                SELECT i.*, p.nombre_empresa, p.contacto_nombre 
+                SELECT i.*, p.nombre_empresa, p.contacto_nombre, u.nombre_unidad
                 FROM insumos i 
                 LEFT JOIN proveedores p ON i.id_proveedor = p.id_proveedor
+                JOIN unidades_medida u ON i.id_unidad = u.id_unidad
                 ORDER BY i.nombre_insumo ASC
             """
             cursor.execute(sql)
@@ -266,26 +287,26 @@ def obtener_insumos_completos():
     finally:
         conexion.close()
 
-def insertar_insumo(nombre, costo, unidad, prov_id):
+def insertar_insumo(nombre, costo, unidad_id, prov_id):
     conexion = crear_conexion()
     try:
         with conexion.cursor() as cursor:
-            sql = "INSERT INTO insumos (nombre_insumo, costo_unitario, unidad_medida, id_proveedor) VALUES (%s, %s, %s, %s)"
+            sql = "INSERT INTO insumos (nombre_insumo, costo_unitario, id_unidad, id_proveedor) VALUES (%s, %s, %s, %s)"
             val_prov = prov_id if prov_id and str(prov_id).strip() != "" else None
-            cursor.execute(sql, (nombre, costo, unidad, val_prov))
+            cursor.execute(sql, (nombre, costo, unidad_id, val_prov))
             conexion.commit()
     except Exception as e:
         print(f"Error al insertar insumo: {e}")
     finally:
         conexion.close()
 
-def update_insumo(id_insumo, nombre, costo, unidad, prov_id):
+def update_insumo(id_insumo, nombre, costo, unidad_id, prov_id):
     conexion = crear_conexion()
     try:
         with conexion.cursor() as cursor:
-            sql = "UPDATE insumos SET nombre_insumo=%s, costo_unitario=%s, unidad_medida=%s, id_proveedor=%s WHERE id_insumo=%s"
+            sql = "UPDATE insumos SET nombre_insumo=%s, costo_unitario=%s, id_unidad=%s, id_proveedor=%s WHERE id_insumo=%s"
             val_prov = prov_id if prov_id and str(prov_id).strip() != "" else None
-            cursor.execute(sql, (nombre, costo, unidad, val_prov, id_insumo))
+            cursor.execute(sql, (nombre, costo, unidad_id, val_prov, id_insumo))
             conexion.commit()
     except Exception as e:
         print(f"Error al actualizar insumo: {e}")
@@ -303,57 +324,69 @@ def borrar_insumo(id_insumo):
     finally:
         conexion.close()
 
-# =================================================================
-# --- PAQUETES ---
-# =================================================================
+# ────────────── ୨୧ ────────────────
+# ═══════ PAQUETES ═══════
+# ────────────── ୨୧ ────────────────
+import json
+
 def get_paquetes_db(conexion):
     cursor = conexion.cursor(dictionary=True)
     sql = """
-        SELECT p.*, 
-               GROUP_CONCAT(CONCAT('{"nombre":"', i.nombre_insumo, '","cantidad":', pi.cantidad_necesaria, '}') SEPARATOR ',') as insumos_info
+        SELECT p.id_paquete, p.nombre_paquete, p.descripcion, p.precio, p.costo,
+               i.id_insumo, i.nombre_insumo, pi.cantidad_necesaria
         FROM paquetes p
         LEFT JOIN paquete_insumo pi ON p.id_paquete = pi.id_paquete
         LEFT JOIN insumos i ON pi.id_insumo = i.id_insumo
-        GROUP BY p.id_paquete
     """
     cursor.execute(sql)
-    paquetes = cursor.fetchall()
-    
-    # Formateamos para que el JavaScript lo entienda como una lista real
-    for p in paquetes:
-        p['insumos_json'] = f"[{p['insumos_info']}]" if p['insumos_info'] else "[]"
-        
+    filas = cursor.fetchall()
     cursor.close()
-    return paquetes
+
+    paquetes_dict = {}
+    for f in filas:
+        id_p = f['id_paquete']
+        if id_p not in paquetes_dict:
+            # Limpiamos saltos de línea y comillas para que el JS no marque error
+            desc_segura = (f['descripcion'] if f['descripcion'] else '').replace("'", "\\'").replace('\n', '\\n').replace('\r', '')
+            nom_seguro = f['nombre_paquete'].replace("'", "\\'")
+            
+            paquetes_dict[id_p] = {
+                'id_paquete': id_p,
+                'nombre_paquete': nom_seguro,
+                'descripcion': desc_segura,
+                'precio': float(f['precio']),
+                'costo': float(f['costo']),
+                'insumos': []
+            }
+        if f['id_insumo']: 
+            paquetes_dict[id_p]['insumos'].append({
+                'id_insumo': f['id_insumo'],
+                'nombre': f['nombre_insumo'],
+                'cantidad': float(f['cantidad_necesaria'])
+            })
+
+    paquetes_lista = []
+    for p in paquetes_dict.values():
+        # Convertimos la receta a JSON y protegemos las comillas dobles
+        json_str = json.dumps(p['insumos'])
+        p['insumos_json'] = json_str.replace('"', '&quot;')
+        paquetes_lista.append(p)
+
+    return paquetes_lista
 
 def get_paquete_por_id(conexion, id_paquete):
-    cursor = conexion.cursor()
-    cursor.execute("SELECT id_paquete, nombre_paquete, descripcion, precio FROM Paquetes WHERE id_paquete = %s", (id_paquete,))
+    cursor = conexion.cursor(dictionary=True)
+    cursor.execute("SELECT id_paquete, nombre_paquete, descripcion, precio, costo FROM paquetes WHERE id_paquete = %s", (id_paquete,))
     f = cursor.fetchone()
     cursor.close()
-    if f: return Paquete(id_paquete=f[0], nombre=f[1], descripcion=f[2], precio=f[3])
+    if f: return Paquete(id_paquete=f['id_paquete'], nombre=f['nombre_paquete'], descripcion=f['descripcion'], precio=f['precio'])
     return None
 
-def agregar_paquete_db(conexion, paquete):
-    cursor = None
-    try:
-        cursor = conexion.cursor()
-        sql = "INSERT INTO Paquetes (nombre_paquete, descripcion, precio) VALUES (%s, %s, %s)"
-        valores = (paquete.nombre_paquete, paquete.descripcion, paquete.precio)
-        cursor.execute(sql, valores)
-        conexion.commit()
-        return cursor.lastrowid
-    except Error as e:
-        print(f"Error al registrar paquete: {e}")
-        return None
-    finally:
-        if cursor: cursor.close()
-
-def guardar_paquete_con_insumos(conexion, nombre, descripcion, precio, insumos_seleccionados):
+def guardar_paquete_con_insumos(conexion, nombre, descripcion, precio, insumos_seleccionados, costo_total=0.0):
     cursor = conexion.cursor()
     try:
-        sql_paquete = "INSERT INTO paquetes (nombre_paquete, descripcion, precio) VALUES (%s, %s, %s)"
-        cursor.execute(sql_paquete, (nombre, descripcion, precio))
+        sql_paquete = "INSERT INTO paquetes (nombre_paquete, descripcion, precio, costo) VALUES (%s, %s, %s, %s)"
+        cursor.execute(sql_paquete, (nombre, descripcion, precio, costo_total))
         id_nuevo_paquete = cursor.lastrowid
 
         sql_pivote = "INSERT INTO paquete_insumo (id_paquete, id_insumo, cantidad_necesaria) VALUES (%s, %s, %s)"
@@ -369,54 +402,50 @@ def guardar_paquete_con_insumos(conexion, nombre, descripcion, precio, insumos_s
     finally:
         cursor.close()
 
-def update_paquete(id_paquete, nombre, precio, descripcion):
-    conexion = crear_conexion()
-    try:
-        with conexion.cursor() as cursor:
-            sql = """
-                UPDATE paquetes 
-                SET nombre_paquete = %s, 
-                    precio = %s, 
-                    descripcion = %s 
-                WHERE id_paquete = %s
-            """
-            cursor.execute(sql, (nombre, precio, descripcion, id_paquete))
-            conexion.commit()
-    except Exception as e:
-        print(f"Error al actualizar paquete: {e}")
-    finally:
-        conexion.close()
-
-def actualizar_paquete_db(conexion, paquete):
+def update_paquete(conexion, id_paquete, nombre, precio, descripcion, insumos_seleccionados, costo_total=0.0):
     cursor = conexion.cursor()
     try:
-        sql = "UPDATE Paquetes SET nombre_paquete=%s, descripcion=%s, precio=%s WHERE id_paquete=%s"
-        cursor.execute(sql, (paquete.nombre_paquete, paquete.descripcion, paquete.precio, paquete.id_paquete))
+        # 1. Actualizamos datos básicos
+        sql = "UPDATE paquetes SET nombre_paquete=%s, precio=%s, descripcion=%s, costo=%s WHERE id_paquete=%s"
+        cursor.execute(sql, (nombre, precio, descripcion, costo_total, id_paquete))
+
+        # 2. Borramos la receta vieja
+        cursor.execute("DELETE FROM paquete_insumo WHERE id_paquete = %s", (id_paquete,))
+
+        # 3. Insertamos la receta nueva
+        sql_pivote = "INSERT INTO paquete_insumo (id_paquete, id_insumo, cantidad_necesaria) VALUES (%s, %s, %s)"
+        for item in insumos_seleccionados:
+            cursor.execute(sql_pivote, (id_paquete, item[0], item[1]))
+
         conexion.commit()
-    except Error as e:
+        return True
+    except Exception as e:
         print(f"Error al actualizar paquete: {e}")
+        conexion.rollback()
+        return False
     finally:
         cursor.close()
 
 def eliminar_paquete_db(conexion, id_paquete):
     cursor = conexion.cursor()
     try:
-        cursor.execute("DELETE FROM Paquetes WHERE id_paquete = %s", (id_paquete,))
+        cursor.execute("DELETE FROM paquetes WHERE id_paquete = %s", (id_paquete,))
         conexion.commit()
     except Error as e:
         print(f"Error: No se puede eliminar un paquete que ya fue vendido en un evento.")
     finally:
         cursor.close()
 
-# =================================================================
-# --- EVENTOS (VENTAS) Y PAGOS ---
-# =================================================================
+# ────────────── ୨୧ ────────────────
+# ═══════ EVENTOS Y PAGOS ═══════
+# ────────────── ୨୧ ────────────────
+
 def get_metodos_pago_db(conexion):
     metodos = []
     cursor = None
     try:
         cursor = conexion.cursor()
-        cursor.execute("SELECT id_metodo, nombre_metodo FROM Metodos_Pago")
+        cursor.execute("SELECT id_metodo, nombre_metodo FROM metodos_pago")
         for f in cursor.fetchall():
             metodos.append({"id": f[0], "nombre": f[1]})
     finally:
@@ -512,12 +541,12 @@ def agregar_evento_db(conexion, evento):
     cursor = None
     try:
         cursor = conexion.cursor()
-        sql_evento = "INSERT INTO Eventos (id_cliente, id_usuario, fecha_evento, hora_evento, lugar, adelanto, id_metodo_pago) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+        sql_evento = "INSERT INTO eventos (id_cliente, id_usuario, fecha_evento, hora_evento, lugar, adelanto, id_metodo_pago) VALUES (%s, %s, %s, %s, %s, %s, %s)"
         valores_evento = (evento.id_cliente, evento.id_usuario, evento.fecha_evento, evento.hora_evento, evento.lugar, evento.adelanto, evento.id_metodo_pago)
         cursor.execute(sql_evento, valores_evento)
         id_evento_nuevo = cursor.lastrowid
         
-        sql_paquete = "INSERT INTO Evento_Paquete (id_evento, id_paquete, cantidad) VALUES (%s, %s, %s)"
+        sql_paquete = "INSERT INTO evento_paquete (id_evento, id_paquete, cantidad) VALUES (%s, %s, %s)"
         for (id_paquete, cantidad) in evento.paquetes:
             cursor.execute(sql_paquete, (id_evento_nuevo, id_paquete, cantidad))
         conexion.commit()
@@ -543,6 +572,9 @@ def actualizar_evento_completo_db(conexion, id_evento, datos, paquetes):
                 cursor.execute(sql_p, (id_evento, id_p, cant))
         
         conexion.commit()
+    except Exception as e:
+        print(f"Error al actualizar evento: {e}")
+        conexion.rollback()
     finally:
         cursor.close()
 
@@ -563,7 +595,7 @@ def abonar_evento_db(conexion, id_evento, monto):
 def eliminar_evento_db(conexion, id_evento):
     cursor = conexion.cursor()
     try:
-        cursor.execute("DELETE FROM Eventos WHERE id_evento = %s", (id_evento,))
+        cursor.execute("DELETE FROM eventos WHERE id_evento = %s", (id_evento,))
         conexion.commit()
     except Error as e:
         print(f"Error al eliminar evento: {e}")

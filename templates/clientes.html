@@ -21,7 +21,7 @@
             {% endif %}
         </h5>
         
-<form action="{% if cliente_editar %}/editar_cliente/{{ cliente_editar.id_cliente }}{% else %}/guardar_cliente{% endif %}" method="POST" onsubmit="confirmarGuardado(event, this, '{% if cliente_editar %}¿Actualizar datos del cliente?{% else %}¿Registrar nuevo cliente?{% endif %}');">
+        <form action="{% if cliente_editar %}/editar_cliente/{{ cliente_editar.id_cliente }}{% else %}/guardar_cliente{% endif %}" method="POST" onsubmit="confirmarGuardado(event, this, '{% if cliente_editar %}¿Actualizar datos del cliente?{% else %}¿Registrar nuevo cliente?{% endif %}');">
             <div class="row g-3 mb-3">
                 <div class="col-md-4">
                     <label class="small ms-2 fw-bold text-muted mb-1">Nombre(s) *</label>
@@ -33,7 +33,7 @@
                 </div>
                 <div class="col-md-4">
                     <label class="small ms-2 fw-bold text-muted mb-1">Apellido Materno</label>
-                    <input type="text" name="apellido_materno" class="form-control bg-light" placeholder="(Opcional)" value="{{ cliente_editar.apellido_materno if cliente_editar else '' }}">
+                    <input type="text" name="apellido_materno" class="form-control bg-light" placeholder="(Opcional)" value="{{ cliente_editar.apellido_materno if cliente_editar and cliente_editar.apellido_materno else '' }}">
                 </div>
             </div>
             <div class="row g-3 mb-4">
@@ -59,10 +59,8 @@
     </div>
 
     <div class="card border-0 shadow-sm rounded-4 mx-auto p-4" style="max-width: 900px; background-color: #ffffff;">
-        
         <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
             <h5 class="fw-bold text-muted text-uppercase small m-0">Directorio de Clientes</h5>
-            
             <form action="/clientes" method="GET" class="d-flex" style="width: 100%; max-width: 350px;">
                 <div class="input-group shadow-sm" style="border-radius: 50px; overflow: hidden; border: 1px solid #eee;">
                     <input type="text" name="q" class="form-control border-0 bg-light px-4" placeholder="Buscar nombre, tel o correo..." value="{{ busqueda_actual }}" style="box-shadow: none;">
@@ -88,14 +86,17 @@
                     {% for cliente in lista_clientes %}
                     <tr style="border-bottom: 1px solid #f8f9fa;">
                         <td class="text-muted fw-bold py-3">#{{ cliente.id_cliente }}</td>
-                        <td class="fw-bold text-dark py-3">{{ cliente.nombre_completo }}</td>
+                        <td class="fw-bold text-dark py-3">
+                            {{ cliente.nombre }} {{ cliente.apellido_paterno }} {{ cliente.apellido_materno or '' }}
+                        </td>
                         <td class="py-3">
                             <div class="small fw-bold text-secondary"><i class="bi bi-telephone-fill me-1 opacity-50"></i>{{ cliente.telefono if cliente.telefono else '--' }}</div>
                             <div class="small text-muted"><i class="bi bi-envelope-fill me-1 opacity-50"></i>{{ cliente.email if cliente.email else '--' }}</div>
                         </td>
                         <td class="py-3 text-end" style="white-space: nowrap;">
                             <a href="/editar_cliente/{{ cliente.id_cliente }}" class="btn btn-sm btn-outline-primary rounded-pill px-3 shadow-sm me-1"><i class="bi bi-pencil"></i></a>
-                        <a href="/eliminar_cliente/{{ cliente.id_cliente }}" class="btn btn-sm btn-outline-danger rounded-pill px-3 shadow-sm" onclick="confirmarEliminacion(event, this.href, '{{ cliente.nombre_completo }}');"><i class="bi bi-trash"></i></a>
+                            <a href="/eliminar_cliente/{{ cliente.id_cliente }}" class="btn btn-sm btn-outline-danger rounded-pill px-3 shadow-sm" onclick="confirmarEliminacion(event, this.href, '{{ cliente.nombre }}');"><i class="bi bi-trash"></i></a>
+                        </td>
                     </tr>
                     {% else %}
                     <tr>
@@ -111,13 +112,10 @@
         </div>
     </div>
 
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        // Pop-up para Guardar/Actualizar
         function confirmarGuardado(event, form, titulo) {
             event.preventDefault(); 
-            
             Swal.fire({
                 title: titulo,
                 text: "Verifica que la información sea correcta antes de continuar.",
@@ -132,16 +130,15 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     form.submit(); 
+                }
             });
         }
 
-        // Pop-up para Eliminar
         function confirmarEliminacion(event, url, nombreCliente) {
             event.preventDefault(); 
-            
             Swal.fire({
                 title: '¿Eliminar a ' + nombreCliente + '?',
-                text: "Esta acción no se puede deshacer. (El sistema la bloqueará automáticamente si el cliente tiene eventos registrados).",
+                text: "Esta action no se puede deshacer. (El sistema la bloqueará automáticamente si el cliente tiene eventos registrados).",
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#dc3545', 
@@ -156,5 +153,4 @@
             });
         }
     </script>
-
 {% endblock %}

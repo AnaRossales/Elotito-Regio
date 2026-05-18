@@ -41,7 +41,7 @@
             <div class="col-md-4">
                 <label class="small fw-bold text-muted mb-1 text-uppercase">Precio de Venta</label>
                 <div class="input-group border rounded-3 shadow-sm" id="group-precio-final">
-                    <input type="number" step="0.01" id="precio_final" name="precio" class="form-control border-0" required placeholder="0.00" oninput="validarPrecio()">
+                    <input type="number" step="0.01" id="precio_final" name="precio" class="form-control border-0" required placeholder="0.00" min="0" oninput="if(this.value < 0) this.value = 0; validarPrecio()">
                     <span class="input-group-text border-0 bg-white text-muted">$</span>
                 </div>
                 <div id="aviso-precio" class="text-danger small fw-bold mt-1 d-none">¡Precio por debajo del sugerido!</div>
@@ -63,7 +63,7 @@
                         </select>
                     </div>
                     <div class="col-4">
-                        <input type="number" step="0.1" class="form-control cant-insumo rounded-3" name="cantidades[]" placeholder="Cant." oninput="calcularCosto()">
+                        <input type="number" step="0.1" class="form-control cant-insumo rounded-3" name="cantidades[]" placeholder="Cant." min="0" oninput="if(this.value < 0) this.value = 0; calcularCosto()">
                     </div>
                     <div class="col-2 text-end">
                         <button type="button" class="btn btn-outline-danger border-0" onclick="eliminarFila(this)"><i class="bi bi-x-circle-fill"></i></button>
@@ -101,24 +101,26 @@
                 <tr>
                     <td class="fw-bold text-dark">{{ paquete.nombre_paquete }}</td>
                     <td class="text-center fw-bold text-dark">${{ "%.2f"|format(paquete.precio) }}</td>
-                    <td class="text-end">
-                        <div class="d-flex justify-content-end gap-1">
-                            <button class="action-btn edit" title="Editar" 
-                                    onclick="cargarEdicion('{{ paquete.id_paquete }}', '{{ paquete.nombre_paquete }}', '{{ paquete.precio }}', '{{ paquete.descripcion }}')">
-                                <i class="bi bi-pencil-square"></i>
-                            </button>
+                   <td class="text-end">
+                    <div class="d-flex justify-content-end gap-1">
+                        
+                        <button class="action-btn edit" title="Editar" 
+                                onclick="cargarEdicion('{{ paquete.id_paquete }}', '{{ paquete.nombre_paquete }}', '{{ paquete.precio }}', '{{ paquete.descripcion }}', '{{ paquete.insumos_json|safe }}')">
+                            <i class="bi bi-pencil-square"></i>
+                        </button>
 
-                            <button class="action-btn view" title="Ver detalles" 
-                                    onclick="verDetallesCompletos('{{ paquete.nombre_paquete }}', '{{ paquete.descripcion }}', '{{ paquete.insumos_json }}')">
-                                <i class="bi bi-eye"></i>
-                            </button>
+                        <button class="action-btn view" title="Ver detalles" 
+                                onclick="verDetallesCompletos('{{ paquete.nombre_paquete }}', '{{ paquete.descripcion }}', '{{ paquete.insumos_json|safe }}')">
+                            <i class="bi bi-eye"></i>
+                        </button>
 
-                            <button class="action-btn delete" title="Eliminar" 
-                                    onclick="confirmarBorrarPaquete('{{ paquete.id_paquete }}', '{{ paquete.nombre_paquete }}')">
-                                <i class="bi bi-trash3"></i>
-                            </button>
-                        </div>
-                    </td>
+                        <button class="action-btn delete" title="Eliminar" 
+                                onclick="confirmarBorrarPaquete('{{ paquete.id_paquete }}', '{{ paquete.nombre_paquete }}')">
+                            <i class="bi bi-trash3"></i>
+                        </button>
+                        
+                    </div>
+                </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -128,31 +130,87 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-// --- NUEVAS FUNCIONES DE EDICIÓN ---
-
-function cargarEdicion(id, nombre, precio, descripcion) {
-    console.log("Editando paquete:", id);
-    
-    // 1. Llenar los campos ocultos y visibles
+function cargarEdicion(id, nombre, precio, descripcion, insumosRaw) {
     document.getElementById('id_paquete_edit').value = id;
     document.querySelector('input[name="nombre_paquete"]').value = nombre;
     document.querySelector('textarea[name="descripcion"]').value = descripcion;
     document.getElementById('precio_final').value = precio;
 
-    // 2. Cambiar la apariencia del botón principal
     const btnAccion = document.getElementById('btnAccion');
     btnAccion.innerText = "Actualizar Paquete";
     btnAccion.classList.remove('btn-warning');
     btnAccion.classList.add('btn-success');
-
-    // 3. Mostrar el botón de cancelar
     document.getElementById('btnCancelar').classList.remove('d-none');
-    
-    // 4. Cambiar la ruta del formulario a la de actualización
     document.getElementById('formPaquetes').action = "/actualizar_paquete";
 
-    // 5. Scroll suave hacia arriba
+    // --- Cargar Insumos Dinámicamente ---
+    const contenedor = document.getElementById('contenedor-insumos');
+    const filaPlantilla = contenedor.querySelector('.insumo-fila').cloneNode(true);
+    filaPlantilla.querySelector('input').value = "";
+    filaPlantilla.querySelector('select').value = "0";
+    
+    // Limpiamos el contenedor
+    contenedor.innerHTML = ''; 
+
+    try {
+        const insumos = JSON.parse(insumosRaw); // Parseo limpio
+        if (insumos.length > 0) {
+            insumos.forEach(ins => {
+                const nuevaFila = filaPlantilla.cloneNode(true);
+                nuevaFila.querySelector('.select-insumo').value = ins.id_insumo;
+                nuevaFila.querySelector('.cant-insumo').value = ins.cantidad;
+                contenedor.appendChild(nuevaFila);
+            });
+        } else {
+            contenedor.appendChild(filaPlantilla.cloneNode(true));
+        }
+        calcularCosto();
+    } catch(e) {
+        console.error("Error cargando insumos", e);
+        contenedor.appendChild(filaPlantilla.cloneNode(true));
+        calcularCosto();
+    }
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function verDetallesCompletos(nombre, descripcion, insumosRaw) {
+    let tablaInsumos = "";
+    try {
+        const insumos = JSON.parse(insumosRaw); // Parseo limpio
+        
+        let filas = "";
+        if(insumos.length > 0) {
+            filas = insumos.map(i => `<tr><td>${i.nombre}</td><td class="text-end">${i.cantidad}</td></tr>`).join('');
+        } else {
+            filas = `<tr><td colspan="2" class="text-center text-muted">Sin insumos registrados</td></tr>`;
+        }
+
+        tablaInsumos = `
+            <div class="text-start mt-3">
+                <p class="small text-muted mb-3"><strong>Descripción:</strong> ${descripcion || 'Sin descripción'}</p>
+                <label class="small fw-bold text-uppercase">Receta del paquete:</label>
+                <table class="table table-sm table-bordered mt-2" style="font-size: 0.85rem;">
+                    <thead class="table-light">
+                        <tr><th>Insumo</th><th class="text-end">Cantidad</th></tr>
+                    </thead>
+                    <tbody>
+                        ${filas}
+                    </tbody>
+                </table>
+            </div>`;
+    } catch (e) {
+        console.error(e);
+        tablaInsumos = `<p class="text-muted small mt-3">${descripcion || 'Sin detalles'}</p>`;
+    }
+
+    Swal.fire({
+        title: `<span class="fw-bold">${nombre}</span>`,
+        html: tablaInsumos,
+        confirmButtonColor: '#ffc107',
+        confirmButtonText: 'Cerrar',
+        width: '500px'
+    });
 }
 
 function limpiarFormulario() {
@@ -204,36 +262,6 @@ function confirmarBorrarPaquete(id, nombre) {
         if (result.isConfirmed) {
             window.location.href = `/eliminar_paquete/${id}`;
         }
-    });
-}
-
-function verDetallesCompletos(nombre, descripcion, insumosRaw) {
-    let tablaInsumos = "";
-    try {
-        const insumos = JSON.parse(insumosRaw.replace(/'/g, '"')); 
-        tablaInsumos = `
-            <div class="text-start mt-3">
-                <p class="small text-muted mb-2"><strong>Descripción:</strong> ${descripcion || 'Sin descripción'}</p>
-                <label class="small fw-bold text-uppercase">Insumos incluidos:</label>
-                <table class="table table-sm mt-2" style="font-size: 0.85rem;">
-                    <thead class="table-light">
-                        <tr><th>Insumo</th><th class="text-end">Cant.</th></tr>
-                    </thead>
-                    <tbody>
-                        ${insumos.map(i => `<tr><td>${i.nombre}</td><td class="text-end">${i.cantidad}</td></tr>`).join('')}
-                    </tbody>
-                </table>
-            </div>`;
-    } catch (e) {
-        tablaInsumos = `<p class="text-muted small mt-3">${descripcion || 'Sin detalles'}</p>`;
-    }
-
-    Swal.fire({
-        title: `<span class="fw-bold">${nombre}</span>`,
-        html: tablaInsumos,
-        confirmButtonColor: '#ffc107',
-        confirmButtonText: 'Cerrar',
-        width: '500px'
     });
 }
 

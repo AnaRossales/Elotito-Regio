@@ -4,19 +4,22 @@ from models.cliente import Cliente
 from werkzeug.security import check_password_hash
 from models.paquete import Paquete
 from models.evento import Evento
+from flask import abort
 
 app = Flask(__name__)
 app.secret_key = 'elotito_regio_secreto_12345' 
 conexion_db = db_manager.crear_conexion()
 
-# =================================================================
-# --- HELPERS Y SEGURIDAD ---
-# =================================================================
+# ────────────── ୨୧ ────────────────
+# ═══════ HELPERS Y SEGURIDAD ═══════
+# ────────────── ୨୧ ────────────────
 
 def verificar_conexion():
     global conexion_db
     if not conexion_db or not conexion_db.is_connected():
         conexion_db = db_manager.crear_conexion()
+        if conexion_db is None:
+            abort(500, description="No pudimos enlazar con la base de datos de Elotito Regio.")
     return conexion_db
 
 def requiere_login():
@@ -28,9 +31,9 @@ def requiere_admin():
         return True
     return not session.get('es_admin', False)
 
-# =================================================================
-# --- ZONA PÚBLICA ---
-# =================================================================
+# ────────────── ୨୧ ────────────────
+# ═══════ ZONA PÚBLICA ═══════
+# ────────────── ୨୧ ────────────────
 
 @app.route('/')
 def index_publico():
@@ -38,9 +41,9 @@ def index_publico():
     lista_paquetes = db_manager.get_paquetes_db(con)
     return render_template('publico.html', paquetes=lista_paquetes)
 
-# =================================================================
-# --- SISTEMA DE LOGIN ---
-# =================================================================
+# ────────────── ୨୧ ────────────────
+# ═══════ SISTEMA DE LOGIN ═══════
+# ────────────── ୨୧ ────────────────
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -48,13 +51,14 @@ def login():
         usuario_input = request.form.get('usuario')
         password_input = request.form.get('password')
         con = verificar_conexion()
+        
         usuario_db = db_manager.get_usuario_por_nombre(con, usuario_input)
         
         if usuario_db and check_password_hash(usuario_db['password_hash'], password_input):
             session['admin_logueado'] = True
             session['usuario_id'] = usuario_db['id_usuario']
             session['nombre_usuario'] = usuario_db['nombre_usuario']
-            session['es_admin'] = bool(usuario_db['es_admin'])
+            session['es_admin'] = bool(usuario_db['es_admin']) 
             return redirect(url_for('dashboard_admin'))
         else:
             return render_template('login.html', error="Usuario o contraseña incorrectos")
@@ -66,9 +70,9 @@ def logout():
     session.clear()
     return redirect(url_for('index_publico'))
 
-# =================================================================
-# --- DASHBOARD ---
-# =================================================================
+# ────────────── ୨୧ ────────────────
+# ═══════ DASHBOARD ═══════
+# ────────────── ୨୧ ────────────────
 
 @app.route('/admin')
 def dashboard_admin():
@@ -79,9 +83,9 @@ def dashboard_admin():
     proximo = db_manager.get_proximo_evento(con) 
     return render_template('dashboard.html', stats=stats, ultimos_eventos=ultimos_eventos, proximo_evento=proximo)
 
-# =================================================================
-# --- MÓDULO DE EVENTOS (Acceso Staff y Admin) ---
-# =================================================================
+# ────────────── ୨୧ ────────────────
+# ═══════ EVENTOS (VENTAS) ═══════
+# ────────────── ୨୧ ────────────────
 
 @app.route('/registrar_evento')
 def pagina_registrar_evento():
@@ -147,17 +151,24 @@ def eliminar_evento(id):
     db_manager.eliminar_evento_db(con, id)
     return redirect(url_for('pagina_eventos_lista'))
 
-@app.route('/abonar_pago/<int:id_evento>/<string:monto>')
+@app.route('/abonar_pago/<int:id_evento>/<monto>')
 def abonar_pago(id_evento, monto):
     if requiere_login(): return redirect(url_for('login'))
     con = verificar_conexion()
+
     try:
-        monto_num = float(monto)
-        if monto_num > 0:
-            db_manager.abonar_evento_db(con, id_evento, monto_num)
+        abono_seguro = max(0.01, float(monto)) 
+        db_manager.abonar_evento_db(con, id_evento, abono_seguro)
+        flash(f"Abono de ${abono_seguro:.2f} registrado correctamente.", "success")
+        
+    except ValueError:
+        flash("El monto ingresado no es válido.", "danger")
     except Exception as e:
-        print(f"Error: {e}")
-    return redirect(url_for('pagina_eventos_lista'))
+        print(f"Error al registrar abono: {e}")
+        flash("Hubo un error al procesar el pago.", "danger")
+        
+    return redirect(url_for('eventos_lista'))
+    
 
 @app.route('/editar_evento/<int:id>')
 def editar_evento(id):
@@ -187,9 +198,9 @@ def actualizar_evento(id):
     flash("Evento actualizado correctamente", "success")
     return redirect(url_for('pagina_eventos_lista'))
 
-# =================================================================
-# --- MÓDULO DE CLIENTES (Acceso Staff y Admin) ---
-# =================================================================
+# ────────────── ୨୧ ────────────────
+# ═══════ CLIENTES ═══════
+# ────────────── ୨୧ ────────────────
 
 @app.route('/clientes')
 def pagina_clientes():
@@ -199,37 +210,63 @@ def pagina_clientes():
     lista = db_manager.get_clientes_db(con, termino_busqueda)
     return render_template('clientes.html', lista_clientes=lista, busqueda_actual=termino_busqueda)
 
+@app.route('/guardar_cliente', methods=['POST'])
+def guardar_cliente():
+    if requiere_login(): return redirect(url_for('login'))
+    con = verificar_conexion()
+    
+    nuevo_c = Cliente(
+        nombre=request.form.get('nombre'),
+        apellido_paterno=request.form.get('apellido_paterno'),
+        apellido_materno=request.form.get('apellido_materno') or None, # NULL controlado si viaja vacío
+        telefono=request.form.get('telefono') or None,
+        email=request.form.get('email') or None
+    )
+    db_manager.agregar_cliente_db(con, nuevo_c)
+    flash("Cliente guardado exitosamente.", "success")
+    return redirect(url_for('pagina_clientes'))
+
 @app.route('/editar_cliente/<int:id>', methods=['GET', 'POST'])
 def editar_cliente(id):
     if requiere_login(): return redirect(url_for('login'))
     con = verificar_conexion()
+    
     if request.method == 'POST':
         cliente_actualizado = Cliente(
             id_cliente=id,
-            nombre=request.form['nombre'],
-            apellido_paterno=request.form['apellido_paterno'],
-            apellido_materno=request.form.get('apellido_materno', ''),
-            telefono=request.form.get('telefono', ''),
-            email=request.form.get('email', '')
+            nombre=request.form.get('nombre'),
+            apellido_paterno=request.form.get('apellido_paterno'),
+            apellido_materno=request.form.get('apellido_materno') or None,
+            telefono=request.form.get('telefono') or None,
+            email=request.form.get('email') or None
         )
         db_manager.actualizar_cliente_db(con, cliente_actualizado)
+        flash("Cliente actualizado correctamente.", "success")
         return redirect(url_for('pagina_clientes'))
     
     cliente_a_editar = db_manager.get_cliente_por_id(con, id)
-    return render_template('clientes.html', lista_clientes=db_manager.get_clientes_db(con), cliente_editar=cliente_a_editar)
+    lista = db_manager.get_clientes_db(con)
+    return render_template('clientes.html', lista_clientes=lista, cliente_editar=cliente_a_editar, busqueda_actual='')
 
 @app.route('/eliminar_cliente/<int:id>')
 def eliminar_cliente(id):
     if requiere_login(): return redirect(url_for('login'))
     con = verificar_conexion()
-    db_manager.eliminar_cliente_db(con, id)
+    
+    # Intentamos borrar y guardamos el resultado (True o False)
+    se_pudo_borrar = db_manager.eliminar_cliente_db(con, id)
+    
+    if se_pudo_borrar:
+        flash("Cliente eliminado del directorio.", "success")
+    else:
+        flash("No se puede eliminar: El cliente tiene eventos o pagos registrados.", "danger")
+        
     return redirect(url_for('pagina_clientes'))
 
-# =================================================================
-# --- MÓDULOS RESTRINGIDOS (SÓLO ADMIN) ---
-# =================================================================
+# ────────────── ୨୧ ────────────────
+# ═══════ PAQUETES ═══════
+# ────────────── ୨୧ ────────────────
 
-# --- Paquetes ---
 @app.route('/paquetes')
 def pagina_paquetes():
     if requiere_login(): return redirect(url_for('login'))
@@ -243,12 +280,31 @@ def pagina_paquetes():
 def guardar_paquete():
     if requiere_login() or requiere_admin(): return redirect(url_for('dashboard_admin'))
     con = verificar_conexion()
-    nuevo_paquete = Paquete(
-        nombre=request.form['nombre_paquete'],
-        descripcion=request.form.get('descripcion', ''),
-        precio=float(request.form['precio'])
-    )
-    db_manager.agregar_paquete_db(con, nuevo_paquete)
+    
+
+    nombre = request.form['nombre_paquete']
+    descripcion = request.form.get('descripcion', '')
+    precio = max(0.0, float(request.form.get('precio', 0)))
+    
+    ids_insumos = request.form.getlist('insumos[]')
+    cantidades_insumos = request.form.getlist('cantidades[]')
+    
+    lista_insumos = db_manager.get_insumos_db(con)
+    costos_dict = {str(ins['id_insumo']): float(ins['costo_unitario']) for ins in lista_insumos}
+    
+    insumos_seleccionados = []
+    costo_total = 0.0
+    
+    for id_ins, cant_str in zip(ids_insumos, cantidades_insumos):
+            if id_ins and id_ins != "0" and cant_str:
+                # La cantidad nunca bajará de 0
+                cant = max(0.0, float(cant_str)) 
+                if cant > 0:
+                    costo_total += costos_dict.get(id_ins, 0.0) * cant
+                    insumos_seleccionados.append((int(id_ins), cant))
+            
+    db_manager.guardar_paquete_con_insumos(con, nombre, descripcion, precio, insumos_seleccionados, costo_total)
+    flash("Paquete y receta guardados exitosamente.", "success")
     return redirect(url_for('pagina_paquetes'))
 
 @app.route('/eliminar_paquete/<int:id>')
@@ -261,14 +317,38 @@ def eliminar_paquete(id):
 @app.route('/actualizar_paquete', methods=['POST'])
 def actualizar_paquete():
     if requiere_login() or requiere_admin(): return redirect(url_for('dashboard_admin'))
+    con = verificar_conexion()
+    
     id_paquete = request.form.get('id_paquete')
     nombre = request.form.get('nombre_paquete')
-    precio = request.form.get('precio')
-    desc = request.form.get('descripcion')
-    db_manager.update_paquete(id_paquete, nombre, precio, desc)
-    return redirect('/paquetes')
+    precio = max(0.0, float(request.form.get('precio', 0)))
+    desc = request.form.get('descripcion', '')
+    
+    ids_insumos = request.form.getlist('insumos[]')
+    cantidades_insumos = request.form.getlist('cantidades[]')
+    
+    lista_insumos = db_manager.get_insumos_db(con)
+    costos_dict = {str(ins['id_insumo']): float(ins['costo_unitario']) for ins in lista_insumos}
+    
+    insumos_seleccionados = []
+    costo_total = 0.0
 
-# --- Proveedores ---
+
+    for id_ins, cant_str in zip(ids_insumos, cantidades_insumos):
+        if id_ins and id_ins != "0" and cant_str:
+            # La cantidad nunca bajará de 0
+            cant = max(0.0, float(cant_str)) 
+            if cant > 0:
+                costo_total += costos_dict.get(id_ins, 0.0) * cant
+                insumos_seleccionados.append((int(id_ins), cant))
+        db_manager.update_paquete(con, id_paquete, nombre, precio, desc, insumos_seleccionados, costo_total)
+        flash("Paquete actualizado correctamente.", "success")
+    return redirect(url_for('pagina_paquetes'))
+
+# ────────────── ୨୧ ────────────────
+# ═══════ PROVEEDORES ═══════
+# ────────────── ୨୧ ────────────────
+
 @app.route('/proveedores')
 def proveedores_view():
     if requiere_login(): return redirect(url_for('login'))
@@ -280,11 +360,12 @@ def proveedores_view():
 def guardar_proveedor():
     if requiere_login() or requiere_admin(): return redirect(url_for('dashboard_admin'))
     db_manager.insertar_proveedor(
-        request.form.get('nombre_contacto'),
-        request.form.get('razon_social'),
-        request.form.get('rfc'),
-        request.form.get('telefono'),
-        request.form.get('email')
+        request.form.get('nombre_empresa'),
+        request.form.get('contacto_nombre', ''),
+        request.form.get('razon_social', ''),
+        request.form.get('rfc', ''),
+        request.form.get('telefono', ''),
+        request.form.get('email', '')
     )
     return redirect('/proveedores')
 
@@ -294,11 +375,11 @@ def actualizar_proveedor():
     db_manager.update_proveedor(
         request.form.get('id_proveedor'),
         request.form.get('nombre_empresa'),
-        request.form.get('contacto_nombre'),
-        request.form.get('razon_social'),
-        request.form.get('rfc'),
-        request.form.get('telefono'),
-        request.form.get('email')
+        request.form.get('contacto_nombre', ''),
+        request.form.get('razon_social', ''),
+        request.form.get('rfc', ''),
+        request.form.get('telefono', ''),
+        request.form.get('email', '')
     )
     return redirect('/proveedores')
 
@@ -308,7 +389,10 @@ def eliminar_proveedor(id):
     db_manager.borrar_proveedor(id)
     return redirect('/proveedores')
 
-# --- Insumos ---
+# ────────────── ୨୧ ────────────────
+# ═══════ INSUMOS ═══════
+# ────────────── ୨୧ ────────────────
+
 @app.route('/insumos')
 def insumos_view():
     if requiere_login(): return redirect(url_for('login'))
@@ -323,7 +407,7 @@ def guardar_insumo():
     db_manager.insertar_insumo(
         request.form.get('nombre_insumo'),
         request.form.get('costo_unitario'),
-        request.form.get('unidad_medida'),
+        request.form.get('id_unidad'), 
         request.form.get('id_proveedor')
     )
     return redirect('/insumos')
@@ -335,7 +419,7 @@ def actualizar_insumo():
         request.form.get('id_insumo'),
         request.form.get('nombre_insumo'),
         request.form.get('costo_unitario'),
-        request.form.get('unidad_medida'),
+        request.form.get('id_unidad'), 
         request.form.get('id_proveedor')
     )
     return redirect('/insumos')
@@ -346,7 +430,10 @@ def eliminar_insumo(id):
     db_manager.borrar_insumo(id)
     return redirect('/insumos')
 
-# --- Usuarios / Staff (Consolidado) ---
+# ────────────── ୨୧ ────────────────
+# ═══════ USUARIOS ═══════
+# ────────────── ୨୧ ────────────────
+
 @app.route('/usuarios')
 def pagina_usuarios():
     if requiere_login(): return redirect(url_for('login'))
@@ -359,11 +446,24 @@ def pagina_usuarios():
 def guardar_usuario():
     if requiere_login() or requiere_admin(): return redirect(url_for('dashboard_admin'))
     con = verificar_conexion()
+    
+    es_admin = request.form.get('es_admin')
+    id_rol = 1 if es_admin else 2 
+    
+    nombre_usuario = request.form.get('nombre_usuario')
+    nombre = request.form.get('nombre')
+    apellido_paterno = request.form.get('apellido_paterno')
+    apellido_materno = request.form.get('apellido_materno') or None
+    password = request.form.get('password')
+    
     db_manager.agregar_usuario_db(
         con, 
-        request.form.get('nombre_usuario'), 
-        request.form.get('password'), 
-        1 if request.form.get('es_admin') else 0
+        nombre_usuario, 
+        nombre,         
+        apellido_paterno,
+        apellido_materno, 
+        id_rol, 
+        password
     )
     flash("Usuario guardado", "success")
     return redirect(url_for('pagina_usuarios'))
@@ -373,19 +473,25 @@ def editar_usuario(id):
     if requiere_login() or requiere_admin(): return redirect(url_for('dashboard_admin'))
     con = verificar_conexion()
     u_edit = db_manager.obtener_usuario_por_id(con, id)
-    lista = db_manager.get_usuarios_db(con)
-    return render_template('usuarios.html', usuario_edit=u_edit, lista_usuarios=lista)
+    return render_template('editar_usuario.html', usuario_edit=u_edit)
 
 @app.route('/actualizar_usuario', methods=['POST'])
 def actualizar_usuario():
     if requiere_login() or requiere_admin(): return redirect(url_for('dashboard_admin'))
     con = verificar_conexion()
+    
+    es_admin = request.form.get('es_admin')
+    id_rol = 1 if es_admin else 2
+    
     db_manager.actualizar_usuario_db(
         con, 
         request.form.get('id_usuario'), 
         request.form.get('nombre_usuario'), 
-        request.form.get('password'), 
-        1 if request.form.get('es_admin') else 0
+        request.form.get('nombre'),         
+        request.form.get('apellido_paterno'),       
+        request.form.get('apellido_materno') or None, 
+        id_rol, 
+        request.form.get('password')
     )
     flash("Usuario actualizado", "success")
     return redirect(url_for('pagina_usuarios'))
@@ -400,8 +506,45 @@ def eliminar_usuario(id):
         db_manager.eliminar_usuario_db(con, id)
     return redirect(url_for('pagina_usuarios'))
 
-# =================================================================
-# --- ARRANQUE ---
-# =================================================================
+# ────────────── ୨୧ ────────────────
+# ═══════ MANEJO DE ERRORES ═══════
+# ────────────── ୨୧ ────────────────
+
+@app.errorhandler(404)
+def pagina_no_encontrada(error):
+    return render_template('error_500.html', 
+                           titulo="Error 404 - Página no encontrada", 
+                           mensaje="La dirección web que ingresaste no existe o fue movida a otro lugar."), 404
+
+@app.errorhandler(403)
+def acceso_denegado(error):
+    return render_template('error_500.html', 
+                           titulo="Error 403 - Acceso Denegado", 
+                           mensaje="No tienes los privilegios necesarios de Administrador para ver esta sección."), 403
+
+@app.errorhandler(405)
+def metodo_no_permitido(error):
+    return render_template('error_500.html', 
+                           titulo="Error 405 - Acción Bloqueada", 
+                           mensaje="Intentaste acceder a una ruta de guardado directamente o recargaste un formulario ya enviado."), 405
+
+@app.errorhandler(500)
+def error_servidor(error):
+    mensaje = error.description if hasattr(error, 'description') else "Error interno del servidor. La base de datos podría estar apagada."
+    return render_template('error_500.html', 
+                           titulo="Error 500 - Falla del Sistema", 
+                           mensaje=mensaje), 500
+
+@app.errorhandler(Exception)
+def error_general(error):
+    # Atrapa cualquier otro error "raro" de Python
+    return render_template('error_500.html', 
+                           titulo="¡Ups! Algo inesperado sucedió", 
+                           mensaje="El sistema encontró un problema que no pudo resolver. Hemos registrado el error."), 500
+
+# ────────────── ୨୧ ────────────────
+# ═══════ ARRANQUE ═══════
+# ────────────── ୨୧ ────────────────
+
 if __name__ == '__main__':
     app.run(debug=True, port=5000)

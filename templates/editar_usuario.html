@@ -1,40 +1,68 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container py-5">
-    <div class="card border-0 shadow-sm rounded-4 mx-auto p-4" style="max-width: 450px;">
-        <div class="text-center mb-4">
-            <div class="rounded-circle d-inline-flex align-items-center justify-content-center mb-3" 
-                 style="width: 60px; height: 60px; background-color: #f8f9fa;">
-                <i class="bi bi-pencil-fill fs-3 text-dark"></i>
-            </div>
-            <h4 class="fw-bold m-0">Editar Usuario</h4>
-            <p class="text-muted small">Modifica las credenciales de @{{ usuario.nombre_usuario }}</p>
-        </div>
 
-        <form action="/actualizar_usuario" method="POST">
-            <input type="hidden" name="id_usuario" value="{{ usuario.id_usuario }}">
-            
-            <div class="mb-3">
-                <label class="small fw-bold text-muted mb-1 ms-2">Nombre de Usuario</label>
-                <input type="text" name="nombre_usuario" class="form-control bg-light border-0" value="{{ usuario.nombre_usuario }}" required>
-            </div>
-
-            <div class="mb-3">
-                <label class="small fw-bold text-muted mb-1 ms-2">Nueva Contraseña</label>
-                <input type="password" name="password" class="form-control bg-light border-0" placeholder="Dejar vacío para no cambiar" minlength="8">
-                <div class="text-muted mt-1 ms-2" style="font-size: 0.7rem;">Mínimo 8 caracteres para seguridad.</div>
-            </div>
-
-            <div class="form-check form-switch mb-4 mt-3 ms-2">
-                <input class="form-check-input" type="checkbox" name="es_admin" id="edAdmin" {% if usuario.es_admin %}checked{% endif %}>
-                <label class="form-check-label fw-bold small text-muted" for="edAdmin">Permisos de Administrador</label>
-            </div>
-
-            <div class="d-grid gap-2">
-                <button type="submit" class="btn btn-dark shadow rounded-pill fw-bold py-2">ACTUALIZAR DATOS</button>
-                <a href="/usuarios" class="btn btn-link text-muted btn-sm text-decoration-none">Cancelar</a>
-            </div>
-        </form>
+<div class="d-flex flex-column align-items-center text-center mb-4 mt-4 mx-auto" style="max-width: 800px;">
+    <div class="rounded-circle d-flex justify-content-center align-items-center shadow-sm mb-3" 
+         style="width: 65px; height: 65px; background: linear-gradient(135deg, #FFD700 0%, #B8860B 100%);">
+        <i class="bi bi-pencil-square fs-2 text-white"></i>
+    </div>
+    <div>
+        <h2 class="fw-bold text-dark m-0">Modificar Cuenta de Empleado</h2>
+        <p class="text-muted mt-2">Actualiza la información personal, credenciales de acceso o privilegios del sistema.</p>
     </div>
 </div>
+
+<div class="card border-0 shadow-sm rounded-4 mx-auto p-4 mb-5" style="max-width: 900px;">
+    <form action="/actualizar_usuario" method="POST">
+        <input type="hidden" name="id_usuario" value="{{ usuario_edit.id_usuario }}">
+        
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <label class="small fw-bold text-muted mb-1 text-uppercase">Nombre(s)</label>
+                <input type="text" name="nombre" class="form-control rounded-pill border-light-subtle bg-light px-3" 
+                       value="{{ usuario_edit.nombre }}" required placeholder="Ej. Ana Haydee">
+            </div>
+            <div class="col-md-4">
+                <label class="small fw-bold text-muted mb-1 text-uppercase">Apellido Paterno</label>
+                <input type="text" name="apellido_paterno" class="form-control rounded-pill border-light-subtle bg-light px-3" 
+                       value="{{ usuario_edit.apellido_paterno }}" required placeholder="Ej. Rosales">
+            </div>
+            <div class="col-md-4">
+                <label class="small fw-bold text-muted mb-1 text-uppercase">Apellido Materno</label>
+                <input type="text" name="apellido_materno" class="form-control rounded-pill border-light-subtle bg-light px-3" 
+                       value="{{ usuario_edit.apellido_materno if usuario_edit.apellido_materno else '' }}" placeholder="Opcional">
+            </div>
+        </div>
+
+        <div class="row g-3 align-items-center">
+            <div class="col-md-5">
+                <label class="small fw-bold text-muted mb-1 text-uppercase">Nombre de Usuario (Login)</label>
+                <input type="text" name="nombre_usuario" class="form-control rounded-pill border-light-subtle bg-light px-3" 
+                       value="{{ usuario_edit.nombre_usuario }}" required placeholder="Ej. ana_ventas">
+            </div>
+            <div class="col-md-5">
+                <label class="small fw-bold text-muted mb-1 text-uppercase">Nueva Contraseña</label>
+                <input type="password" name="password" class="form-control rounded-pill border-light-subtle bg-light px-3" 
+                       minlength="8" placeholder="Dejar en blanco para conservar la actual">
+            </div>
+            <div class="col-md-2 text-center">
+                <label class="small fw-bold text-muted mb-1 text-uppercase d-block">¿Es Admin?</label>
+                <div class="form-check form-switch d-inline-block mt-2">
+                    <input class="form-check-input shadow-none" type="checkbox" name="es_admin" id="checkAdmin" 
+                           {% if usuario_edit.es_admin %}checked{% endif %}>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center mt-5">
+            <button type="submit" class="btn btn-warning rounded-pill px-5 py-2 fw-bold shadow-sm text-uppercase">
+                <i class="bi bi-check-circle-fill me-2"></i>Actualizar Cambios
+            </button>
+            <a href="/usuarios" class="btn btn-outline-secondary rounded-pill px-4 py-2 ms-2 text-uppercase fw-bold">
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+
 {% endblock %}

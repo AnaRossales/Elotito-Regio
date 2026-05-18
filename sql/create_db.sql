@@ -1,74 +1,75 @@
--- =================================================================
--- SCRIPT DE CREACIÓN DE BASE DE DATOS: ELOTITO REGIO
--- =================================================================
-
-CREATE DATABASE IF NOT EXISTS elotito_regio_db 
-CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-
+CREATE DATABASE elotito_regio_db;
 USE elotito_regio_db;
 
--- =================================================================
--- 1. TABLAS MAESTRAS (No dependen de otras tablas)
--- =================================================================
+CREATE TABLE roles (
+    id_rol TINYINT AUTO_INCREMENT PRIMARY KEY,
+    nombre_rol VARCHAR(30) NOT NULL UNIQUE,
+    es_admin TINYINT(1) NOT NULL DEFAULT 0
+);
 
-CREATE TABLE IF NOT EXISTS usuarios (
-    id_usuario INT NOT NULL AUTO_INCREMENT,
-    nombre_usuario VARCHAR(50) NOT NULL UNIQUE,
-    password_hash VARCHAR(255) NOT NULL,
-    es_admin TINYINT(1) DEFAULT 0,
-    PRIMARY KEY (id_usuario)
-) ENGINE=InnoDB;
+CREATE TABLE metodos_pago (
+    id_metodo TINYINT AUTO_INCREMENT PRIMARY KEY,
+    nombre_metodo VARCHAR(30) NOT NULL UNIQUE
+);
 
-CREATE TABLE IF NOT EXISTS clientes (
-    id_cliente INT NOT NULL AUTO_INCREMENT,
+CREATE TABLE unidades_medida (
+    id_unidad TINYINT AUTO_INCREMENT PRIMARY KEY,
+    nombre_unidad VARCHAR(20) NOT NULL UNIQUE
+);
+
+CREATE TABLE usuarios (
+    id_usuario INT AUTO_INCREMENT PRIMARY KEY,
+    id_rol TINYINT NOT NULL,
+    nombre_usuario VARCHAR(30) NOT NULL UNIQUE,
     nombre VARCHAR(50) NOT NULL,
-    apellido_paterno VARCHAR(50) NOT NULL,
-    apellido_materno VARCHAR(50) DEFAULT NULL,
-    telefono VARCHAR(15) DEFAULT NULL,
-    email VARCHAR(100) DEFAULT NULL,
-    PRIMARY KEY (id_cliente)
-) ENGINE=InnoDB;
+    apellido_paterno VARCHAR(30) NOT NULL,
+    apellido_materno VARCHAR(30) DEFAULT NULL,
+    telefono CHAR(15) DEFAULT NULL,
+    password_hash VARCHAR(255) NOT NULL,
+    FOREIGN KEY (id_rol) REFERENCES roles(id_rol)
+);
 
-CREATE TABLE IF NOT EXISTS metodos_pago (
-    id_metodo TINYINT NOT NULL AUTO_INCREMENT,
-    nombre_metodo VARCHAR(50) NOT NULL,
-    PRIMARY KEY (id_metodo)
-) ENGINE=InnoDB;
+CREATE TABLE clientes (
+    id_cliente INT AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL,
+    apellido_paterno VARCHAR(30) NOT NULL,
+    apellido_materno VARCHAR(30) DEFAULT NULL,
+    telefono CHAR(15) DEFAULT NULL,
+    email VARCHAR(80) DEFAULT NULL
+);
 
-CREATE TABLE IF NOT EXISTS proveedores (
-    id_proveedor INT NOT NULL AUTO_INCREMENT,
-    nombre_empresa VARCHAR(100) NOT NULL,
-    contacto_nombre VARCHAR(100) DEFAULT NULL,
-    telefono VARCHAR(15) DEFAULT NULL,
-    email VARCHAR(100) DEFAULT NULL,
-    PRIMARY KEY (id_proveedor)
-) ENGINE=InnoDB;
+CREATE TABLE proveedores (
+    id_proveedor INT AUTO_INCREMENT PRIMARY KEY,
+    nombre_empresa VARCHAR(80) NOT NULL,
+    contacto_nombre VARCHAR(50) DEFAULT NULL,
+    contacto_apellido_paterno VARCHAR(30) DEFAULT NULL,
+    contacto_apellido_materno VARCHAR(30) DEFAULT NULL,
+    razon_social VARCHAR(100) DEFAULT NULL,
+    rfc VARCHAR(13) DEFAULT NULL,
+    telefono CHAR(20) DEFAULT NULL,
+    email VARCHAR(80) DEFAULT NULL
+);
 
-CREATE TABLE IF NOT EXISTS paquetes (
-    id_paquete SMALLINT NOT NULL AUTO_INCREMENT,
-    nombre_paquete VARCHAR(100) NOT NULL,
+CREATE TABLE paquetes (
+    id_paquete SMALLINT AUTO_INCREMENT PRIMARY KEY,
+    nombre_paquete VARCHAR(60) NOT NULL,
     descripcion TEXT DEFAULT NULL,
     precio DECIMAL(10,2) NOT NULL,
-    PRIMARY KEY (id_paquete)
-) ENGINE=InnoDB;
+    costo DECIMAL(10,2) NOT NULL
+);
 
--- =================================================================
--- 2. TABLAS SECUNDARIAS (Dependen de las tablas maestras)
--- =================================================================
-
-CREATE TABLE IF NOT EXISTS insumos (
-    id_insumo INT NOT NULL AUTO_INCREMENT,
-    nombre_insumo VARCHAR(100) NOT NULL,
+CREATE TABLE insumos (
+    id_insumo INT AUTO_INCREMENT PRIMARY KEY,
+    nombre_insumo VARCHAR(60) NOT NULL,
     costo_unitario DECIMAL(10,2) NOT NULL,
-    unidad_medida VARCHAR(20) DEFAULT NULL,
+    id_unidad TINYINT NOT NULL,
     id_proveedor INT DEFAULT NULL,
-    PRIMARY KEY (id_insumo),
-    FOREIGN KEY (id_proveedor) REFERENCES proveedores(id_proveedor) 
-        ON DELETE SET NULL ON UPDATE CASCADE
-) ENGINE=InnoDB;
+    FOREIGN KEY (id_unidad) REFERENCES unidades_medida(id_unidad),
+    FOREIGN KEY (id_proveedor) REFERENCES proveedores(id_proveedor)
+);
 
-CREATE TABLE IF NOT EXISTS eventos (
-    id_evento INT NOT NULL AUTO_INCREMENT,
+CREATE TABLE eventos (
+    id_evento INT AUTO_INCREMENT PRIMARY KEY,
     id_cliente INT NOT NULL,
     id_usuario INT NOT NULL,
     fecha_evento DATE NOT NULL,
@@ -76,50 +77,25 @@ CREATE TABLE IF NOT EXISTS eventos (
     lugar VARCHAR(150) NOT NULL,
     adelanto DECIMAL(10,2) DEFAULT 0.00,
     id_metodo_pago TINYINT DEFAULT NULL,
-    PRIMARY KEY (id_evento),
-    FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente) 
-        ON UPDATE CASCADE ON DELETE RESTRICT,
-    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario) 
-        ON UPDATE CASCADE ON DELETE RESTRICT,
-    FOREIGN KEY (id_metodo_pago) REFERENCES metodos_pago(id_metodo) 
-        ON UPDATE CASCADE ON DELETE SET NULL
-) ENGINE=InnoDB;
+    FOREIGN KEY (id_cliente) REFERENCES clientes(id_cliente),
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id_usuario),
+    FOREIGN KEY (id_metodo_pago) REFERENCES metodos_pago(id_metodo)
+);
 
--- =================================================================
--- 3. TABLAS PIVOTE (Relaciones Muchos a Muchos)
--- =================================================================
-
-CREATE TABLE IF NOT EXISTS paquete_insumo (
+CREATE TABLE paquete_insumo (
     id_paquete SMALLINT NOT NULL,
     id_insumo INT NOT NULL,
     cantidad_necesaria DECIMAL(10,2) NOT NULL,
     PRIMARY KEY (id_paquete, id_insumo),
-    FOREIGN KEY (id_paquete) REFERENCES paquetes(id_paquete) 
-        ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (id_insumo) REFERENCES insumos(id_insumo) 
-        ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB;
+    FOREIGN KEY (id_paquete) REFERENCES paquetes(id_paquete) ON DELETE CASCADE,
+    FOREIGN KEY (id_insumo) REFERENCES insumos(id_insumo) ON DELETE CASCADE
+);
 
-CREATE TABLE IF NOT EXISTS evento_paquete (
+CREATE TABLE evento_paquete (
     id_evento INT NOT NULL,
     id_paquete SMALLINT NOT NULL,
     cantidad SMALLINT NOT NULL DEFAULT 1,
     PRIMARY KEY (id_evento, id_paquete),
-    FOREIGN KEY (id_evento) REFERENCES eventos(id_evento) 
-        ON DELETE CASCADE ON UPDATE CASCADE,
-    FOREIGN KEY (id_paquete) REFERENCES paquetes(id_paquete) 
-        ON DELETE RESTRICT ON UPDATE CASCADE
-) ENGINE=InnoDB;
-
--- =================================================================
--- 4. INSERCIÓN DE DATOS POR DEFECTO
--- =================================================================
-
-INSERT INTO metodos_pago (nombre_metodo) VALUES 
-('Efectivo'), 
-('Transferencia'), 
-('Tarjeta de Crédito/Débito');
-
-
-INSERT INTO usuarios (nombre_usuario, password_hash, es_admin) VALUES 
-('admin', 'temporal123', 1);
+    FOREIGN KEY (id_evento) REFERENCES eventos(id_evento) ON DELETE CASCADE,
+    FOREIGN KEY (id_paquete) REFERENCES paquetes(id_paquete)
+);

@@ -8,67 +8,87 @@
     </div>
     <div>
         <h2 class="fw-bold text-dark m-0">Gestión de Usuarios</h2>
-        <p class="text-muted mt-2">Administra los accesos y niveles de seguridad del personal.</p>
+        <p class="text-muted mt-2">Administra los accesos, datos del personal y niveles de seguridad.</p>
     </div>
 </div>
 
 <div class="card border-0 shadow-sm rounded-4 mx-auto p-4 mb-4" style="max-width: 900px;">
-    <form action="{% if usuario_edit %}/actualizar_usuario{% else %}/guardar_usuario{% endif %}" method="POST">
-        {% if usuario_edit %}<input type="hidden" name="id_usuario" value="{{ usuario_edit.id_usuario }}">{% endif %}
+    <form action="/guardar_usuario" method="POST">
         
+        <div class="row g-3 mb-3">
+            <div class="col-md-4">
+                <label class="small fw-bold text-muted mb-1 text-uppercase">Nombre(s)</label>
+                <input type="text" name="nombre" class="form-control rounded-pill border-light-subtle bg-light" 
+                       required placeholder="Ej. Ana Haydee">
+            </div>
+            <div class="col-md-4">
+                <label class="small fw-bold text-muted mb-1 text-uppercase">Apellido Paterno</label>
+                <input type="text" name="apellido_paterno" class="form-control rounded-pill border-light-subtle bg-light" 
+                       required placeholder="Ej. Rosales">
+            </div>
+            <div class="col-md-4">
+                <label class="small fw-bold text-muted mb-1 text-uppercase">Apellido Materno</label>
+                <input type="text" name="apellido_materno" class="form-control rounded-pill border-light-subtle bg-light" 
+                       placeholder="Opcional">
+            </div>
+        </div>
+
         <div class="row g-3">
             <div class="col-md-5">
-                <label class="small fw-bold text-muted mb-1 text-uppercase">Nombre de Usuario</label>
+                <label class="small fw-bold text-muted mb-1 text-uppercase">Nombre de Usuario (Login)</label>
                 <input type="text" name="nombre_usuario" class="form-control rounded-pill border-light-subtle bg-light" 
-                       value="{{ usuario_edit.nombre_usuario if usuario_edit else '' }}" required placeholder="Ej. ana_admin">
+                       required placeholder="Ej. ana_ventas">
             </div>
             <div class="col-md-5">
-                <label class="small fw-bold text-muted mb-1 text-uppercase">
-                    {% if usuario_edit %}Nueva Contraseña (Opcional){% else %}Contraseña{% endif %}
-                </label>
+                <label class="small fw-bold text-muted mb-1 text-uppercase">Contraseña</label>
                 <input type="password" name="password" class="form-control rounded-pill border-light-subtle bg-light" 
-                       {% if not usuario_edit %}required{% endif %} minlength="8" placeholder="••••••••">
+                       required minlength="8" placeholder="••••••••">
             </div>
             <div class="col-md-2 text-center">
-                <label class="small fw-bold text-muted mb-1 text-uppercase d-block">Admin</label>
+                <label class="small fw-bold text-muted mb-1 text-uppercase d-block">¿Es Admin?</label>
                 <div class="form-check form-switch d-inline-block mt-2">
-                    <input class="form-check-input" type="checkbox" name="es_admin" id="checkAdmin" 
-                           {% if usuario_edit and usuario_edit.es_admin %}checked{% endif %}>
+                    <input class="form-check-input" type="checkbox" name="es_admin" id="checkAdmin">
                 </div>
             </div>
         </div>
 
         <div class="text-center mt-5">
             <button type="submit" class="btn btn-warning rounded-pill px-5 py-2 fw-bold shadow-sm text-uppercase">
-                {% if usuario_edit %}Actualizar Acceso{% else %}Guardar Usuario{% endif %}
+                Guardar Empleado
             </button>
-            {% if usuario_edit %}
-                <a href="/usuarios" class="btn btn-outline-secondary rounded-pill px-4 py-2 ms-2 text-uppercase">Cancelar</a>
-            {% endif %}
         </div>
     </form>
 </div>
 
 <div class="card border-0 shadow-sm rounded-4 mx-auto p-4" style="max-width: 900px;">
-    <h5 class="fw-bold text-dark mb-4">Personal con Acceso</h5>
+    <h5 class="fw-bold text-dark mb-4">Personal con Acceso al Sistema</h5>
     <div class="table-responsive">
         <table class="table table-hover align-middle w-100 m-0">
             <thead class="bg-light">
                 <tr class="text-muted small text-uppercase">
-                    <th style="width: 50%;">Usuario</th>
-                    <th class="text-center" style="width: 25%;">Rol</th>
+                    <th style="width: 50%;">Empleado / Credencial</th>
+                    <th class="text-center" style="width: 25%;">Rol Operativo</th>
                     <th class="text-end" style="width: 25%;">Acciones</th>
                 </tr>
             </thead>
             <tbody>
                 {% for u in lista_usuarios %}
                 <tr>
-                    <td class="fw-bold text-dark">@{{ u.nombre_usuario }}</td>
+                    <td>
+                        <span class="fw-bold text-dark d-block">
+                            {% if u.nombre %}
+                                {{ u.nombre }} {{ u.apellido_paterno }} {{ u.apellido_materno or '' }}
+                            {% else %}
+                                Empleado Sin Nombre
+                            {% endif %}
+                        </span>
+                        <span class="text-muted small">@{{ u.nombre_usuario }}</span>
+                    </td>
                     <td class="text-center">
                         {% if u.es_admin %}
                             <span class="badge rounded-pill px-3 py-2 shadow-sm" style="background-color: #FFF3E0; color: #E65100;">Administrador</span>
                         {% else %}
-                            <span class="badge rounded-pill px-3 py-2 shadow-sm" style="background-color: #F5F5F5; color: #616161;">Staff</span>
+                            <span class="badge rounded-pill px-3 py-2 shadow-sm" style="background-color: #F5F5F5; color: #616161;">Ventas / Staff</span>
                         {% endif %}
                     </td>
                     <td class="text-end">
@@ -78,7 +98,7 @@
                             </a>
                             {% if session.usuario_id != u.id_usuario %}
                             <a href="/eliminar_usuario/{{ u.id_usuario }}" class="action-btn delete" title="Eliminar" 
-                               onclick="return confirm('¿Revocar acceso?')">
+                               onclick="return confirm('¿Revocar acceso y eliminar empleado del sistema?')">
                                 <i class="bi bi-trash3"></i>
                             </a>
                             {% endif %}

@@ -107,7 +107,7 @@
                 <div class="row g-3 mb-3">
                     <div class="col-md-6">
                         <label class="small ms-3 fw-bold text-muted mb-1">Adelanto recibido ($) - Opcional</label>
-                        <input type="number" step="0.01" name="adelanto" id="inputAdelanto" class="form-control" placeholder="Ej. 500.00">
+                       <input type="number" step="0.01" name="adelanto" class="form-control" placeholder="0.00" value="0" min="0" oninput="if(this.value < 0) this.value = 0;">
                         <small id="errorAdelanto" class="text-danger fw-bold ms-3 d-none">¡El adelanto no puede superar el total!</small>
                     </div>
                     <div class="col-md-6">

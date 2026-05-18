@@ -26,7 +26,7 @@
                         <span class="input-group-text bg-light border-light-subtle border-end-0 text-muted ps-3">
                             $
                         </span>
-                        <input type="number" step="0.01" name="costo_unitario" class="form-control border-light-subtle border-start-0 ps-1" placeholder="0.00" required>
+                        <input type="number" step="0.01" name="costo_unitario" class="form-control" required placeholder="0.00" min="0" oninput="if(this.value < 0) this.value = 0;">
                     </div>
                 </div>
 
