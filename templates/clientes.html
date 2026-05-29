@@ -25,15 +25,15 @@
             <div class="row g-3 mb-3">
                 <div class="col-md-4">
                     <label class="small ms-2 fw-bold text-muted mb-1">Nombre(s) *</label>
-                    <input type="text" name="nombre" class="form-control bg-light" required placeholder="Ej. Juan Carlos" value="{{ cliente_editar.nombre if cliente_editar else '' }}">
+                    <input type="text" name="nombre" maxlenght="50" pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="agrega los datos correctos" class="form-control bg-light" required placeholder="Ej. Juan Carlos" value="{{ cliente_editar.nombre if cliente_editar else '' }}">
                 </div>
                 <div class="col-md-4">
                     <label class="small ms-2 fw-bold text-muted mb-1">Apellido Paterno *</label>
-                    <input type="text" name="apellido_paterno" class="form-control bg-light" required placeholder="Ej. Pérez" value="{{ cliente_editar.apellido_paterno if cliente_editar else '' }}">
+                    <input type="text" name="apellido_paterno" maxlenght="50" pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="agrega los datos correctos" class="form-control bg-light" required placeholder="Ej. Pérez" value="{{ cliente_editar.apellido_paterno if cliente_editar else '' }}">
                 </div>
                 <div class="col-md-4">
                     <label class="small ms-2 fw-bold text-muted mb-1">Apellido Materno</label>
-                    <input type="text" name="apellido_materno" class="form-control bg-light" placeholder="(Opcional)" value="{{ cliente_editar.apellido_materno if cliente_editar and cliente_editar.apellido_materno else '' }}">
+                    <input type="text" name="apellido_materno" maxlenght="50" pattern="[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+" title="agrega los datos correctos" class="form-control bg-light" placeholder="(Opcional)" value="{{ cliente_editar.apellido_materno if cliente_editar and cliente_editar.apellido_materno else '' }}">
                 </div>
             </div>
             <div class="row g-3 mb-4">
